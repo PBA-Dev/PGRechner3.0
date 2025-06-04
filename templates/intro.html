@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pflegegradrechner - Start</title>
+    <head>
+        <!-- ... other head elements (meta, title, css link) ... -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+        <!-- Make sure your own CSS link is AFTER the Google Fonts link -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Willkommen beim Pflegegradrechner</h1>
+        <p>
+            Dieser Rechner hilft Ihnen dabei, den voraussichtlichen Pflegegrad gemäß dem Neuen Begutachtungsassessment (NBA) einzuschätzen.
+            Er basiert auf der Beantwortung von Fragen in sechs verschiedenen Modulen, die unterschiedliche Bereiche der Selbstständigkeit und Fähigkeiten abbilden.
+        </p>
+        <p>
+            Bitte beantworten Sie die Fragen auf den folgenden Seiten möglichst genau entsprechend der Situation der pflegebedürftigen Person. Am Ende erhalten Sie eine Zusammenfassung der Punkte und eine Einschätzung des möglichen Pflegegrades.
+        </p>
+        <p><strong>Hinweis:</strong> Dieses Tool dient nur zur Orientierung und ersetzt nicht die offizielle Begutachtung durch den Medizinischen Dienst (MD) oder MEDICPROOF.</p>
+
+        <div style="margin-top: 30px;">
+             {# Link to the first module page #}
+            <a href="{{ url_for('module_page', module_id=1) }}" class="btn btn-primary start-btn">Rechner starten</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,214 @@
+# In app.py
+from flask import Flask, render_template, request, make_response, url_for
+from fpdf import FPDF
+from modules.module1 import module1
+from modules.module2 import module2
+from modules.module3 import module3
+from modules.module4 import module4
+from modules.module5 import module5
+from modules.module6 import module6 # <-- Import Module 6
+from config.pflegegrad_config import pflegegrad_thresholds
+
+app = Flask(__name__)
+
+# Combine all modules
+modules = {
+    1: module1,
+    2: module2,
+    3: module3,
+    4: module4,
+    5: module5,
+    6: module6, # <-- Add Module 6
+}
+
+# --- NBA Specific Calculation Adjustment (Module 2 vs Module 3) ---
+# We need to adjust the main calculation logic slightly if we want
+# to follow the rule where only the higher score of M2 or M3 counts.
+# Let's refine the 'calculate' function.
+
+@app.route('/')
+def index():
+    return render_template('index.html', modules=modules)
+
+@app.route('/calculate', methods=['POST'])
+def calculate():
+    module_scores = {}
+    weighted_scores = {}
+    answers = {}
+    unweighted_module_points = {} # Store raw points per module
+
+    # Calculate raw scores for each module first
+    for module_id, module in modules.items():
+        module_total = 0
+        module_answers = {}
+
+        for q_idx, question in enumerate(module['questions']):
+            answer_key = f"module_{module_id}_question_{q_idx}"
+            score_str = request.form.get(answer_key)
+
+            if score_str is None:
+                score = 0
+                answer_text = "Keine Antwort gewählt"
+            else:
+                try:
+                    score = int(score_str)
+                    # Find the corresponding option text based on score
+                    option_found = False
+                    for option in question['options']:
+                        if option['score'] == score:
+                            answer_text = option['text']
+                            option_found = True
+                            break
+                    if not option_found:
+                        score = 0 # Default if score is invalid
+                        answer_text = "Ungültige Auswahl"
+                except ValueError:
+                    score = 0
+                    answer_text = "Fehlerhafte Eingabe"
+
+            module_total += score
+            module_answers[str(q_idx)] = {
+                'question': question['question'],
+                'score': score,
+                'answer_text': answer_text
+            }
+
+        unweighted_module_points[str(module_id)] = module_total # Store raw points
+        answers[str(module_id)] = module_answers
+        module_scores[str(module_id)] = module_total # Keep this for display if needed
+
+    # --- NBA Specific Weighting ---
+    total_weighted_score = 0
+    final_weighted_scores = {} # Store the scores actually used for PG calculation
+
+    # Handle Module 2 vs Module 3
+    points_m2 = unweighted_module_points.get('2', 0)
+    points_m3 = unweighted_module_points.get('3', 0)
+    weight_m2_m3 = 0.15 # Combined weight for M2/M3 block
+
+    # Determine which module score (M2 or M3) contributes to the total
+    if points_m2 >= points_m3:
+        contributing_points_m2_m3 = points_m2
+        final_weighted_scores['2'] = contributing_points_m2_m3 * weight_m2_m3
+        final_weighted_scores['3'] = 0 # M3 does not contribute directly if M2 is higher/equal
+    else:
+        contributing_points_m2_m3 = points_m3
+        final_weighted_scores['3'] = contributing_points_m2_m3 * weight_m2_m3
+        final_weighted_scores['2'] = 0 # M2 does not contribute directly if M3 is higher
+
+    total_weighted_score += final_weighted_scores.get('2', 0) + final_weighted_scores.get('3', 0)
+
+    # Add weighted scores for other modules (M1, M4, M5, M6)
+    for module_id_str in ['1', '4', '5', '6']:
+        if module_id_str in unweighted_module_points:
+            module_id = int(module_id_str)
+            points = unweighted_module_points[module_id_str]
+            weight = modules[module_id].get('weight', 0)
+            weighted_score = points * weight
+            final_weighted_scores[module_id_str] = weighted_score
+            total_weighted_score += weighted_score
+
+    # Determine Pflegegrad using the final total_weighted_score
+    pflegegrad = 0
+    sorted_thresholds = sorted(pflegegrad_thresholds.items(), key=lambda item: item[1][0])
+
+    for grade, (min_points, max_points) in sorted_thresholds:
+        if min_points <= total_weighted_score < max_points:
+            pflegegrad = grade
+            break
+    if not pflegegrad and total_weighted_score >= sorted_thresholds[-1][1][0]:
+         pflegegrad = sorted_thresholds[-1][0]
+
+    result = {
+        'module_scores': module_scores, # Raw scores per module for display
+        'weighted_scores': final_weighted_scores, # Weighted scores used in calculation
+        'total_weighted_score': total_weighted_score,
+        'pflegegrad': pflegegrad,
+        'answers': answers
+    }
+
+    # Pass the final weighted scores to the template
+    return render_template('result.html',
+                           result=result,
+                           modules=modules,
+                           pflegegrad_thresholds=pflegegrad_thresholds)
+
+
+# ... rest of your app.py (generate_pdf, main block) ...
+# Make sure generate_pdf uses the correct keys from the result dictionary
+# passed via hidden fields if you are using that method.
+
+@app.route('/generate_pdf', methods=['POST'])
+def generate_pdf():
+    # Create PDF
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=12)
+
+    # Add header
+    pdf.set_font("Arial", 'B', 16)
+    pdf.multi_cell(190, 10, "Pflegegradrechner - Auswertung", align='C', ln=1)
+    pdf.ln(10)
+
+    # Get total scores from form
+    total_weighted_score = float(request.form.get('total_weighted_score', 0))
+    pflegegrad = int(request.form.get('pflegegrad', 0))
+
+    # Add content for each module
+    pdf.set_font("Arial", size=12)
+    for module_id, module in modules.items():
+        module_id_str = str(module_id)
+
+        pdf.set_font("Arial", 'B', 14)
+        module_name = request.form.get(f'module_names_{module_id}', module.get('name', f'Modul {module_id}'))
+        pdf.multi_cell(190, 10, module_name.encode('latin-1', 'replace').decode('latin-1'), ln=1)
+        pdf.set_font("Arial", size=12)
+
+        # Get module scores (raw and weighted) from form
+        # Note: Ensure these keys match what's sent from result.html
+        module_score_raw = float(request.form.get(f'module_scores_{module_id}', 0))
+        # Use the final weighted score used in calculation
+        weighted_score = float(request.form.get(f'weighted_scores_{module_id}', 0))
+
+        # Add questions and answers
+        q_idx = 0
+        while True:
+            question = request.form.get(f'question_{module_id}_{q_idx}')
+            if question is None:
+                break
+
+            answer_text = request.form.get(f'answer_text_{module_id}_{q_idx}', '')
+            answer_score = request.form.get(f'answer_score_{module_id}_{q_idx}', '0')
+
+            question_pdf = question.encode('latin-1', 'replace').decode('latin-1')
+            answer_text_pdf = answer_text.encode('latin-1', 'replace').decode('latin-1')
+
+            pdf.multi_cell(190, 5,
+                          f"Frage: {question_pdf}\n"
+                          f"Antwort: {answer_text_pdf} (Punkte: {answer_score})", border=0, ln=1)
+            pdf.ln(3)
+            q_idx += 1
+
+        pdf.cell(190, 10, f"Modulpunkte (Roh): {module_score_raw}", ln=1)
+        # Display the weighted score that contributed to the total PG calculation
+        pdf.cell(190, 10, f"Gewichtete Punkte (Beitrag zu PG): {weighted_score:.2f}", ln=1)
+        pdf.ln(5)
+
+    # Add summary
+    pdf.set_font("Arial", 'B', 14)
+    pdf.cell(190, 10, "Zusammenfassung", ln=1)
+    pdf.set_font("Arial", size=12)
+    pdf.cell(190, 10, f"Gesamtpunktzahl (gewichtet): {total_weighted_score:.2f}", ln=1)
+    pdf.cell(190, 10, f"Ermittelter Pflegegrad: {pflegegrad}", ln=1)
+
+    # Generate response
+    pdf_output_bytes = bytes(pdf.output())
+    response = make_response(pdf_output_bytes)
+    response.headers['Content-Type'] = 'application/pdf'
+    response.headers['Content-Disposition'] = 'attachment; filename=pflegegrad_auswertung.pdf'
+
+    return response
+
+
+if __name__ == '__main__':
+    app.run(debug=True)

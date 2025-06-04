@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pflegegradrechner - Modul {{ module_id }}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Your custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- Add Bootstrap Icons CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+</head>
+<body>
+    <div class="container mt-4">
+        {# Display flashed messages #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {# Use Bootstrap alert classes #}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {# --- Progress Bar Section (Keep as is) --- #}
+        {% if current_estimated_score is defined and max_score is defined and pflegegrad_thresholds is defined %}
+        <div class="progress-section mb-4">
+            <h4>Geschätzter Punktestand*</h4>
+            <div class="progress-container">
+                <div class="progress-bar-markers">
+                    {% for grade, bounds in pflegegrad_thresholds.items() | sort %}
+                        {% if grade > 0 %}
+                            {% set min_points_for_grade = bounds.get('min_points', 0) %}
+                            {% set marker_pos = (min_points_for_grade / max_score * 100) | round(1) %}
+                            {% if marker_pos > 98 %}{% set marker_pos = 98 %}{% endif %}
+                            {% if marker_pos < 2 %}{% set marker_pos = 2 %}{% endif %}
+                            <span class="marker" style="left: {{ marker_pos }}%;" data-grade="PG{{ grade }}">
+                                PG{{ grade }}*
+                                <span class="marker-value">{{ min_points_for_grade }} Pkt.*</span>
+                            </span>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="progress" style="height: 25px;"> {# Use Bootstrap progress component #}
+                    {% set current_percentage = (current_estimated_score / max_score * 100) | round(1) %}
+                    {% if current_percentage > 100 %}{% set current_percentage = 100 %}{% endif %}
+                    <div class="progress-bar" role="progressbar" style="width: {{ current_percentage }}%;" aria-valuenow="{{ current_percentage }}" aria-valuemin="0" aria-valuemax="100">
+                         <span class="current-score-label">{{ current_estimated_score | round(1) }} Pkt.*</span>
+                    </div>
+                </div>
+            </div>
+            <p class="progress-note small text-muted mt-2">*Dies ist eine Schätzung basierend auf den bisherigen Eingaben und ersetzt nicht die offizielle Begutachtung.</p>
+        </div>
+        <hr class="progress-separator mb-4">
+        {% endif %}
+        {# --- End Progress Bar Section --- #}
+
+        <h1>{{ module.name }} (Modul {{ module_id }} von {{ TOTAL_MODULES }})</h1> {# Use module_id and TOTAL_MODULES #}
+
+        <form method="post" action="{{ url_for('module_page_submit', module_id=module_id) }}"> {# Use module_id #}
+
+            {# --- Loop through questions or parts --- #}
+            {% if module.id == 5 %}
+                {# --- Module 5: Loop through parts and then questions --- #}
+                {% for part in module.parts %}
+                    <h4 class="mt-4">{{ part.part_id }}: {{ part.name }}</h4>
+                    {% for question in part.questions %}
+                        {% set question_key = question.id %} {# Use question ID as unique key within M5 #}
+                        <div class="mb-4 p-3 border rounded bg-light question-block"> {# Added question-block class #}
+                            <h5>{{ question.id }}: {{ question.text }}
+                                {% if question.explanation %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary explanation-toggle-icon ms-2" onclick="toggleExplanation(this)" title="Erklärung anzeigen/verbergen">?</button>
+                                {% endif %}
+                            </h5>
+                             {% if question.explanation %}
+                            <div class="explanation hidden mt-2 small text-muted">
+                                {{ question.explanation }}
+                            </div>
+                            {% endif %}
+
+                            {% if question.type == 'frequency' %}
+                                {# --- Frequency Input --- #}
+                                {% set current_answer_data = session.get('module_answers', {}).get(module.id | string, {}).get(question_key, {}) %}
+                                <div class="row g-3 align-items-center mt-2">
+                                    <div class="col-auto">
+                                         <label for="freq_count_{{ question_key }}" class="col-form-label">Häufigkeit:</label>
+                                    </div>
+                                    <div class="col-auto">
+                                        {# Pre-fill value from session if available #}
+                                        <input type="number" id="freq_count_{{ question_key }}" name="freq_count_{{ question_key }}" class="form-control form-control-sm" min="0" style="width: 80px;"
+                                               value="{{ current_answer_data.get('count', '') }}">
+                                    </div>
+                                    <div class="col-auto">
+                                         <label for="freq_unit_{{ question_key }}" class="col-form-label">pro</label>
+                                    </div>
+                                    <div class="col-auto">
+                                        <select id="freq_unit_{{ question_key }}" name="freq_unit_{{ question_key }}" class="form-select form-select-sm" style="width: auto;">
+                                            {% for unit in question.frequency_units %}
+                                                {# Pre-select unit from session if available #}
+                                                <option value="{{ unit }}" {% if current_answer_data.get('unit') == unit %}selected{% endif %}>{{ unit }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                     <div class="col-auto form-text">
+                                        (0 = Entfällt/Selbständig) {# Clarify meaning of 0 #}
+                                    </div>
+                                </div>
+                                {# Consider adding a hidden input to mark this question as answered, even if 0 #}
+                                <input type="hidden" name="answered_{{ question_key }}" value="1">
+
+                            {% elif question.type == 'standard' %}
+                                 {# --- Standard Radio Buttons (like other modules) --- #}
+                                 {% set current_answer_data = session.get('module_answers', {}).get(module.id | string, {}).get(question_key, {}) %}
+                                 {% for opt_idx, option in question.options %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio"
+                                               name="answer_{{ module_id }}_{{ question_key }}" {# Use question_key #}
+                                               id="option_{{ module_id }}_{{ question_key }}_{{ opt_idx }}"
+                                               value="{{ opt_idx }}" {# *** SEND INDEX *** #}
+                                               {% if current_answer_data and current_answer_data.get('option_index') == opt_idx %}checked{% endif %} {# *** CHECK BY INDEX *** #}
+                                               required>
+                                        <label class="form-check-label" for="option_{{ module.id }}_{{ question_key }}_{{ opt_idx }}">
+                                            {{ option.text }} {% if option.score is defined %}({{ option.score }} Pkt.){% endif %} {# Show score if defined #}
+                                        </label>
+                                    </div>
+                                 {% endfor %}
+
+                            {% else %}
+                                {# Fallback for potentially other question types or standard radio buttons if type not specified #}
+                                {% set current_answer_data = session.get('module_answers', {}).get(module.id | string, {}).get(question_key, {}) %}
+                                 {% for opt_idx, option in question.options %}
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio"
+                                               name="answer_{{ module.id }}_{{ question_key }}" {# Use question_key #}
+                                               id="option_{{ module.id }}_{{ question_key }}_{{ opt_idx }}"
+                                               value="{{ opt_idx }}" {# *** SEND INDEX *** #}
+                                               {% if current_answer_data and current_answer_data.get('option_index') == opt_idx %}checked{% endif %} {# *** CHECK BY INDEX *** #}
+                                               required>
+                                        <label class="form-check-label" for="option_{{ module.id }}_{{ question_key }}_{{ opt_idx }}">
+                                            {{ option.text }} {% if option.score is defined %}({{ option.score }} Pkt.){% endif %} {# Show score if defined #}
+                                        </label>
+                                    </div>
+                                 {% endfor %}
+                            {% endif %}
+                        </div> {# End question block #}
+                    {% endfor %} {# End loop questions in part #}
+                {% endfor %} {# End loop parts #}
+
+                {% else %}
+                {# --- Standard Modules (1, 2, 3, 4, 6): Loop through questions --- #}
+                {# *** APPLY ENUMERATE HERE *** #}
+                {% for question in module.questions %}
+                    {% set question_index_str = loop.index0 | string %} {# Use index as string key #}
+                    <div class="mb-4 p-3 border rounded bg-light question-block"> {# Added question-block class #}
+                        <h5>{{ question.id }}: {{ question.text }}
+                            {% if question.explanation %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary explanation-toggle-icon ms-2" onclick="toggleExplanation(this)" title="Erklärung anzeigen/verbergen">?</button>
+                            {% endif %}
+                        </h5>
+                         {% if question.explanation %}
+                        <div class="explanation hidden mt-2 small text-muted">
+                            {{ question.explanation }}
+                            {# Optionally add option explanations here if needed, like in your original code #}
+                        </div>
+                        {% endif %}
+
+                        {# Pre-select answer based on session data using index #}
+                        {# Ensure current_answers is passed from the GET route #}
+                        {% set current_answer_data = current_answers.get(question_index_str, {}) %}
+                        {% set current_answer_index = current_answer_data.get('option_index') %}
+
+                        {# *** APPLY ENUMERATE HERE TOO *** #}
+                        {% for option in question.options %}
+                            {% set opt_idx = loop.index0 %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio"
+                                       name="answer_{{ module_id }}_{{ question_index_str }}"
+                                       id="option_{{ module_id }}_{{ question_index_str }}_{{ opt_idx }}"
+                                       value="{{ opt_idx }}"
+                                       {% if current_answer_index is not none and current_answer_index == opt_idx %}checked{% endif %}
+                                       required> {# Make questions required #}
+                                <label class="form-check-label" for="option_{{ module_id }}_{{ question_index_str }}_{{ opt_idx }}">
+                                    {{ option.text }} {% if option.score is defined %}({{ option.score }} Pkt.){% endif %} {# Show score if defined #}
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div> {# End question block #}
+                {% endfor %} {# End loop questions #}
+            {% endif %}
+            {# --- End Loop --- #}
+
+
+            {# --- Add Notes Section --- #}
+            <div class="mb-4 mt-5 pt-3 border-top"> {# Add some spacing and a separator #}
+                <h4>Notizen zu Modul {{ module.id }} (Optional)</h4>
+                <p class="text-muted small">Hier können Sie spezifische Beobachtungen oder Begründungen für dieses Modul festhalten.</p>
+                {# Ensure current_answers is passed from the GET route #}
+                <textarea class="form-control"
+                          id="module_{{ module.id }}_notes"
+                          name="module_{{ module.id }}_notes"
+                          rows="4"
+                          placeholder="Ihre Notizen...">{{ current_answers.get('notes', '') }}</textarea> {# Pre-fill with existing notes from current_answers #}
+            </div>
+            {# --- End Notes Section --- #}
+
+
+            {# --- Navigation Buttons (using Bootstrap classes) --- #}
+            <div class="d-flex justify-content-between mt-4">
+                {% if module_id > 1 %}
+                    <a href="{{ url_for('module_page', module_id=module_id-1) }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Zurück zu Modul {{ module_id - 1 }}
+                    </a>
+                {% else %}
+                    <span></span> {# Placeholder to keep button alignment #}
+                {% endif %}
+
+                <button type="submit" class="btn btn-primary">
+                    {% if module_id == TOTAL_MODULES %}
+                        Ergebnisse Berechnen <i class="bi bi-calculator"></i>
+                    {% else %}
+                        Weiter zu Modul {{ module_id + 1 }} <i class="bi bi-arrow-right"></i>
+                    {% endif %}
+                </button>
+            </div>
+            {# --- End Navigation Buttons --- #}
+
+        </form>
+    </div> {# End container #}
+
+    <!-- Bootstrap Bundle with Popper -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Function to toggle explanation visibility
+        function toggleExplanation(buttonElement) {
+            // Find the parent question block
+            const questionBlock = buttonElement.closest('.question-block');
+            if (questionBlock) {
+                 // Find the explanation div within that block
+                const explanationDiv = questionBlock.querySelector('.explanation');
+                if (explanationDiv) {
+                    explanationDiv.classList.toggle('hidden');
+                }
+            }
+        }
+
+        // Optional: Add CSS for the .hidden class if not already defined
+        // e.g., in your style.css:
+        // .hidden { display: none; }
+        // .explanation-toggle-icon { cursor: pointer; }
+    </script>
+</body>
+</html>
