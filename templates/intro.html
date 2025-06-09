@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pflegegradrechner - Start</title>
-    <head>
         <!-- ... other head elements (meta, title, css link) ... -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,10 +23,33 @@
         </p>
         <p><strong>Hinweis:</strong> Dieses Tool dient nur zur Orientierung und ersetzt nicht die offizielle Begutachtung durch den Medizinischen Dienst (MD) oder MEDICPROOF.</p>
 
-        <div style="margin-top: 30px;">
-             {# Link to the first module page #}
-            <a href="{{ url_for('module_page', module_id=1) }}" class="btn btn-primary start-btn">Rechner starten</a>
-        </div>
+        <form method="post" action="{{ url_for('start') }}" class="mt-4">
+            <div class="mb-3">
+                <label for="berater_name" class="form-label">Name des Pflegeberaters / der Pflegeberaterin</label>
+                <input type="text" class="form-control" id="berater_name" name="berater_name">
+            </div>
+            <div class="mb-3">
+                <label for="client_name" class="form-label">Name der pflegebedürftigen Person</label>
+                <input type="text" class="form-control" id="client_name" name="client_name">
+            </div>
+            <div class="mb-3">
+                <label for="insurance_number" class="form-label">Krankenversicherungsnummer (optional)</label>
+                <input type="text" class="form-control" id="insurance_number" name="insurance_number">
+            </div>
+            <div class="mb-3">
+                <label for="dob" class="form-label">Geburtsdatum (optional)</label>
+                <input type="date" class="form-control" id="dob" name="dob">
+            </div>
+            <div class="mb-3">
+                <label for="address" class="form-label">Adresse (optional)</label>
+                <input type="text" class="form-control" id="address" name="address">
+            </div>
+            <div class="mb-3">
+                <label for="phone" class="form-label">Telefonnummer (optional)</label>
+                <input type="text" class="form-control" id="phone" name="phone">
+            </div>
+            <button type="submit" class="btn btn-primary start-btn">Rechner starten</button>
+        </form>
     </div>
 </body>
 </html>

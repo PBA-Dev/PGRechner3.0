@@ -1,12 +1,11 @@
-"""
-Pflegegrad configuration and thresholds
-"""
+"""Thresholds for determining the Pflegegrad."""
+
 
 pflegegrad_thresholds = {
-    0: (0, 12.5),
-    1: (12.5, 27),
-    2: (27, 47.5),
-    3: (47.5, 70),
-    4: (70, 90),
-    5: (90, 100)
+      0: {"min_points": 0},
+    1: {"min_points": 12.5},
+    2: {"min_points": 27},
+    3: {"min_points": 47.5},
+    4: {"min_points": 70},
+    5: {"min_points": 90},
 }

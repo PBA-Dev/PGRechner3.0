@@ -1,15 +1,3 @@
-/NBA-tooldoc.docx
-/Okay, I understand. You want to enhance your exist
-/Pages from _21-05_BRi_Pflege_21_11_18_barrierefrei.docx
-/Perplexity different iterations
-/pflegegrad_auswertung (1).pdf
-/pflegegrad_auswertung (2).pdf
-/pflegegrad_auswertung (3).pdf
-/pflegegrad_auswertung (4).pdf
-/pflegegrad_auswertung.pdf
-/Pflegegrad_Bericht.pdf
-/pflegegrad_results (PG2)-21.04.2025.pdf
-/pflegegrad_results-.pdf
-/pflegegrad_results-24.4.25.pdf
-/pflegegrad_results.pdf
-/venv
+__pycache__/
+*.pyc
+venv/

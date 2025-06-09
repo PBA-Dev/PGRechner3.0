@@ -84,22 +84,6 @@ def calculate_frequency_score(count, unit):
     elif 'monat' in unit or 'month' in unit: return 1
     else: return 0
 
-# ... (rest of app setup) ...
-
-# ... (other imports) ...
-
-# In app.py
-
-# --- Helper Function ---
-weighted_score_mapping_tables = {
-    1: [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9), (10, 10), (11, 10), (12, 10), (13, 10), (14, 10), (15, 10)],
-    2: [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9), (10, 10), (11, 11), (12, 12), (13, 13), (14, 14), (15, 15), (16, 15), (17, 15), (18, 15), (19, 15), (20, 15), (21, 15), (22, 15), (23, 15), (24, 15), (25, 15), (26, 15), (27, 15), (28, 15), (29, 15), (30, 15), (31, 15), (32, 15), (33, 15)],
-    3: [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 5), (7, 5), (8, 5), (9, 5), (10, 10), (11, 10), (12, 10), (13, 10), (14, 10), (15, 15), (16, 15), (17, 15), (18, 15), (19, 15), (20, 15), (21, 15), (22, 15), (23, 15), (24, 15), (25, 15), (26, 15), (27, 15), (28, 15), (29, 15), (30, 15), (31, 15), (32, 15), (33, 15), (34, 15), (35, 15), (36, 15), (37, 15), (38, 15), (39, 15), (40, 15), (41, 15), (42, 15), (43, 15), (44, 15), (45, 15), (46, 15), (47, 15), (48, 15), (49, 15), (50, 15), (51, 15), (52, 15), (53, 15), (54, 15), (55, 15), (56, 15), (57, 15), (58, 15), (59, 15), (60, 15), (61, 15), (62, 15), (63, 15), (64, 15), (65, 15)],
-    4: [(0, 0), (1, 2.5), (2, 5), (3, 7.5), (4, 10), (5, 12.5), (6, 15), (7, 17.5), (8, 20), (9, 22.5), (10, 25), (11, 27.5), (12, 30), (13, 32.5), (14, 35), (15, 37.5), (16, 40), (17, 40), (18, 40), (19, 40), (20, 40), (21, 40), (22, 40), (23, 40), (24, 40), (25, 40), (26, 40), (27, 40), (28, 40), (29, 40), (30, 40), (31, 40), (32, 40), (33, 40), (34, 40), (35, 40), (36, 40), (37, 40), (38, 40), (39, 40), (40, 40), (41, 40), (42, 40), (43, 40), (44, 40), (45, 40), (46, 40), (47, 40), (48, 40)],
-    5: [(0, 0), (1, 5), (2, 10), (3, 15), (4, 20), (5, 20), (6, 20), (7, 20), (8, 20), (9, 20), (10, 20), (11, 20), (12, 20), (13, 20), (14, 20), (15, 20)],
-    6: [(0, 0), (1, 1.25), (2, 2.5), (3, 3.75), (4, 5), (5, 6.25), (6, 7.5), (7, 8.75), (8, 10), (9, 11.25), (10, 12.5), (11, 13.75), (12, 15), (13, 15), (14, 15), (15, 15), (16, 15), (17, 15), (18, 15)]
-}
-
 # --- Routes ---
 
 @app.route('/')
@@ -110,34 +94,21 @@ def intro():
     session.pop('results', None)
     return render_template('intro.html')
 
+@app.route('/start', methods=['POST'])
+def start():
+    """Stores Berater and Klient information then starts the questionnaire."""
+    session['user_info'] = {
+        'berater_name': request.form.get('berater_name', '').strip(),
+        'client_name': request.form.get('client_name', '').strip(),
+        'insurance_number': request.form.get('insurance_number', '').strip(),
+        'dob': request.form.get('dob', '').strip(),
+        'address': request.form.get('address', '').strip(),
+        'phone': request.form.get('phone', '').strip(),
+    }
+    return redirect(url_for('module_page', module_id=1))
 
-# --- Add Helper Function for Module 5 Frequency Scoring ---
-def calculate_frequency_score(count, unit):
-    """
-    Calculates a raw score based on frequency of need.
-    Adjust this logic based on official NBA guidelines if needed.
-    """
-    try:
-        # Ensure count is a non-negative integer
-        count = int(count)
-        if count < 0:
-            count = 0
-    except (ValueError, TypeError):
-        count = 0 # Treat invalid input as 0
 
-    if count == 0:
-        return 0 # No need or self-sufficient
 
-    # Determine score based on unit (assuming count > 0)
-    unit = str(unit).lower() # Normalize unit
-    if 'tag' in unit or 'day' in unit:
-        return 3 # Daily need
-    elif 'woche' in unit or 'week' in unit:
-        return 2 # Weekly need
-    elif 'monat' in unit or 'month' in unit:
-        return 1 # Monthly need
-    else:
-        return 0 # Unknown unit or frequency not applicable
 
 # --- Update module_page_submit function ---
 # --- Route for DISPLAYING module page (GET requests) ---
@@ -466,38 +437,12 @@ def calculate():
         'result.html',
         results=results,
         all_modules=all_modules,
-        pflegegrad_thresholds=pflegegrad_thresholds
+        pflegegrad_thresholds=pflegegrad_thresholds,
+        user_info=session.get('user_info', {})
         # Add TOTAL_MODULES if used in result.html
         # TOTAL_MODULES=TOTAL_MODULES
     )
 
-# Make sure calculate_frequency_score, all_modules, pflegegrad_thresholds,
-
-# Example structure (should be in config or app.py)
-weighted_score_mapping_tables = {
-    1: [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9), (10, 10), (11, 10), (12, 10), (13, 10), (14, 10), (15, 10)], # Example M1 mapping
-    2: [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7), (8, 8), (9, 9), (10, 10), (11, 11), (12, 12), (13, 13), (14, 14), (15, 15), (16, 15), (17, 15), (18, 15), (19, 15), (20, 15), (21, 15), (22, 15), (23, 15), (24, 15), (25, 15), (26, 15), (27, 15), (28, 15), (29, 15), (30, 15), (31, 15), (32, 15), (33, 15)], # Example M2 mapping
-    3: [(0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 5), (7, 5), (8, 5), (9, 5), (10, 10), (11, 10), (12, 10), (13, 10), (14, 10), (15, 15), (16, 15), (17, 15), (18, 15), (19, 15), (20, 15), (21, 15), (22, 15), (23, 15), (24, 15), (25, 15), (26, 15), (27, 15), (28, 15), (29, 15), (30, 15), (31, 15), (32, 15), (33, 15), (34, 15), (35, 15), (36, 15), (37, 15), (38, 15), (39, 15), (40, 15), (41, 15), (42, 15), (43, 15), (44, 15), (45, 15), (46, 15), (47, 15), (48, 15), (49, 15), (50, 15), (51, 15), (52, 15), (53, 15), (54, 15), (55, 15), (56, 15), (57, 15), (58, 15), (59, 15), (60, 15), (61, 15), (62, 15), (63, 15), (64, 15), (65, 15)], # Example M3 mapping
-    4: [(0, 0), (1, 2.5), (2, 5), (3, 7.5), (4, 10), (5, 12.5), (6, 15), (7, 17.5), (8, 20), (9, 22.5), (10, 25), (11, 27.5), (12, 30), (13, 32.5), (14, 35), (15, 37.5), (16, 40), (17, 40), (18, 40), (19, 40), (20, 40), (21, 40), (22, 40), (23, 40), (24, 40), (25, 40), (26, 40), (27, 40), (28, 40), (29, 40), (30, 40), (31, 40), (32, 40), (33, 40), (34, 40), (35, 40), (36, 40), (37, 40), (38, 40), (39, 40), (40, 40), (41, 40), (42, 40), (43, 40), (44, 40), (45, 40), (46, 40), (47, 40), (48, 40)], # Example M4 mapping
-    5: [(0, 0), (1, 5), (2, 10), (3, 15), (4, 20), (5, 20), (6, 20), (7, 20), (8, 20), (9, 20), (10, 20), (11, 20), (12, 20), (13, 20), (14, 20), (15, 20)], # Example M5 mapping
-    6: [(0, 0), (1, 1.25), (2, 2.5), (3, 3.75), (4, 5), (5, 6.25), (6, 7.5), (7, 8.75), (8, 10), (9, 11.25), (10, 12.5), (11, 13.75), (12, 15), (13, 15), (14, 15), (15, 15), (16, 15), (17, 15), (18, 15)], # Example M6 mapping
-}
-
-def map_raw_to_weighted_score(module_id, raw_score):
-    """Maps raw score to weighted score based on predefined tables."""
-    if module_id not in weighted_score_mapping_tables:
-        return 0.0 # Or raise error
-
-    mapping_table = weighted_score_mapping_tables[module_id]
-    weighted_score = 0.0
-    # Find the highest weighted score where raw_score >= table_raw_score
-    for table_raw, table_weighted in mapping_table:
-        if raw_score >= table_raw:
-            weighted_score = table_weighted
-        else:
-            # Since table is sorted by raw score, we can stop early
-            break
-    return weighted_score
 
 # Ensure pflegegrad_thresholds is defined or imported
 pflegegrad_thresholds = {
@@ -540,12 +485,26 @@ def generate_pdf():
         pflegegrad = int(data.get('pflegegrad', 0))
         benefits_data = data.get('benefits', {})
         notes_data = data.get('notes', {}) # Aggregated notes { '1': 'note', ... }
+        user_info = data.get('user_info', {})
+
 
         # --- PDF Generation Logic ---
         pdf = FPDF()
         pdf.add_page()
         usable_width = pdf.w - pdf.l_margin - pdf.r_margin
         pdf.set_font("Arial", size=12) # Using core font
+
+        # Company Header
+        pdf.set_font("Arial", 'B', 14)
+        pdf.multi_cell(usable_width, 8, "Optimum Pflegeberatung".encode('latin-1', 'replace').decode('latin-1'),
+                       align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.set_font("Arial", size=10)
+        pdf.multi_cell(usable_width, 5, "Verena Campbell - Pflegeberaterin".encode('latin-1', 'replace').decode('latin-1'),
+                       align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.multi_cell(usable_width, 5, "verena.campbell@optimum-pflegeberatung.de".encode('latin-1', 'replace').decode('latin-1'),
+                       align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.ln(5)
+
 
         # --- Title ---
         pdf.set_font("Arial", 'B', 16)
@@ -565,6 +524,26 @@ def generate_pdf():
         pdf.cell(usable_width, 8, pg_text.encode('latin-1', 'replace').decode('latin-1'),
                  new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.ln(5)
+
+                # User / Client Information
+        if user_info:
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(usable_width, 8, "Daten".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font("Arial", size=10)
+            if user_info.get('berater_name'):
+                pdf.cell(usable_width, 5, f"Pflegeberater/in: {user_info.get('berater_name')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            if user_info.get('client_name'):
+                pdf.cell(usable_width, 5, f"Klient/in: {user_info.get('client_name')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            if user_info.get('insurance_number'):
+                pdf.cell(usable_width, 5, f"Krankenversicherungsnummer: {user_info.get('insurance_number')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            if user_info.get('dob'):
+                pdf.cell(usable_width, 5, f"Geburtsdatum: {user_info.get('dob')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            if user_info.get('address'):
+                pdf.cell(usable_width, 5, f"Adresse: {user_info.get('address')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            if user_info.get('phone'):
+                pdf.cell(usable_width, 5, f"Telefon: {user_info.get('phone')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.ln(5)
+
 
         # --- Benefits Display ---
         if benefits_data and benefits_data.get('leistungen'):

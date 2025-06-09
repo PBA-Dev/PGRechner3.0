@@ -32,6 +32,24 @@
             {% endif %}
         {% endwith %}
 
+                <div class="text-center mb-4">
+            <h2>Optimum Pflegeberatung</h2>
+            <p>Verena Campbell - Pflegeberaterin</p>
+            <p><a href="mailto:verena.campbell@optimum-pflegeberatung.de">verena.campbell@optimum-pflegeberatung.de</a></p>
+        </div>
+
+        {% if user_info %}
+        <div class="mb-4">
+            {% if user_info.berater_name %}<p><strong>Berater/in:</strong> {{ user_info.berater_name }}</p>{% endif %}
+            {% if user_info.client_name %}<p><strong>Klient/in:</strong> {{ user_info.client_name }}</p>{% endif %}
+            {% if user_info.insurance_number %}<p><strong>Krankenversicherungsnummer:</strong> {{ user_info.insurance_number }}</p>{% endif %}
+            {% if user_info.dob %}<p><strong>Geburtsdatum:</strong> {{ user_info.dob }}</p>{% endif %}
+            {% if user_info.address %}<p><strong>Adresse:</strong> {{ user_info.address }}</p>{% endif %}
+            {% if user_info.phone %}<p><strong>Telefon:</strong> {{ user_info.phone }}</p>{% endif %}
+        </div>
+        {% endif %}
+
+
         <h1 class="mb-4 text-center">Ergebnis der Pflegegradberechnung</h1>
 
         <!-- Summary Section -->
@@ -156,6 +174,9 @@
             <script id="pdf-data" type="application/json">
                 {{ results | tojson | safe }}
             </script>
+            <script id="user-info-data" type="application/json">
+                {{ user_info | tojson | safe }}
+            </script>
             <button id="generate-pdf-button" type="button" class="btn btn-success">
                 <i class="bi bi-file-earmark-pdf"></i> Ergebnisse als PDF speichern
             </button>
@@ -170,6 +191,8 @@
     <script>
         document.getElementById('generate-pdf-button').addEventListener('click', function() {
             const resultsDataElement = document.getElementById('pdf-data');
+            const userInfoElement = document.getElementById('user-info-data');
+
             if (!resultsDataElement) {
                 console.error('PDF data element not found!');
                 alert('Fehler: PDF-Daten nicht gefunden.');
@@ -185,6 +208,16 @@
                 return;
             }
 
+            let userInfo = {};
+            if (userInfoElement) {
+                try {
+                    userInfo = JSON.parse(userInfoElement.textContent);
+                } catch (e) {
+                    console.error('Failed to parse user info:', e);
+                }
+            }
+
+
             // Prepare the payload EXACTLY as the backend /generate_pdf expects
             const payload = {
                 detailed_results: {
@@ -196,7 +229,8 @@
                 final_total_score: resultsData.final_total_score,
                 pflegegrad: resultsData.pflegegrad,
                 notes: resultsData.notes || {}, // Pass aggregated notes
-                benefits: resultsData.benefits || {} // Pass benefits data
+                benefits: resultsData.benefits || {}, // Pass benefits data
+                user_info: userInfo
             };
 
             console.log('Sending payload to /generate_pdf:', payload); // Debugging
