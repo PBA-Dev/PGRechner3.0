@@ -111,6 +111,20 @@ def intro():
     return render_template('intro.html')
 
 
+@app.route('/start', methods=['POST'])
+def start():
+    """Stores Berater and Klient information then starts the questionnaire."""
+    session['user_info'] = {
+        'berater_name': request.form.get('berater_name', '').strip(),
+        'client_name': request.form.get('client_name', '').strip(),
+        'insurance_number': request.form.get('insurance_number', '').strip(),
+        'dob': request.form.get('dob', '').strip(),
+        'address': request.form.get('address', '').strip(),
+        'phone': request.form.get('phone', '').strip(),
+    }
+    return redirect(url_for('module_page', module_id=1))
+
+
 # --- Add Helper Function for Module 5 Frequency Scoring ---
 def calculate_frequency_score(count, unit):
     """
@@ -466,7 +480,8 @@ def calculate():
         'result.html',
         results=results,
         all_modules=all_modules,
-        pflegegrad_thresholds=pflegegrad_thresholds
+        pflegegrad_thresholds=pflegegrad_thresholds,
+        user_info=session.get('user_info', {})
         # Add TOTAL_MODULES if used in result.html
         # TOTAL_MODULES=TOTAL_MODULES
     )
@@ -540,12 +555,24 @@ def generate_pdf():
         pflegegrad = int(data.get('pflegegrad', 0))
         benefits_data = data.get('benefits', {})
         notes_data = data.get('notes', {}) # Aggregated notes { '1': 'note', ... }
+        user_info = data.get('user_info', {})
 
         # --- PDF Generation Logic ---
         pdf = FPDF()
         pdf.add_page()
         usable_width = pdf.w - pdf.l_margin - pdf.r_margin
         pdf.set_font("Arial", size=12) # Using core font
+
+        # Company Header
+        pdf.set_font("Arial", 'B', 14)
+        pdf.multi_cell(usable_width, 8, "Optimum Pflegeberatung".encode('latin-1', 'replace').decode('latin-1'),
+                       align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.set_font("Arial", size=10)
+        pdf.multi_cell(usable_width, 5, "Verena Campbell - Pflegeberaterin".encode('latin-1', 'replace').decode('latin-1'),
+                       align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.multi_cell(usable_width, 5, "verena.campbell@optimum-pflegeberatung.de".encode('latin-1', 'replace').decode('latin-1'),
+                       align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        pdf.ln(5)
 
         # --- Title ---
         pdf.set_font("Arial", 'B', 16)
@@ -565,6 +592,25 @@ def generate_pdf():
         pdf.cell(usable_width, 8, pg_text.encode('latin-1', 'replace').decode('latin-1'),
                  new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.ln(5)
+
+        # User / Client Information
+        if user_info:
+            pdf.set_font("Arial", 'B', 12)
+            pdf.cell(usable_width, 8, "Daten".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.set_font("Arial", size=10)
+            if user_info.get('berater_name'):
+                pdf.cell(usable_width, 5, f"Pflegeberater/in: {user_info.get('berater_name')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            if user_info.get('client_name'):
+                pdf.cell(usable_width, 5, f"Klient/in: {user_info.get('client_name')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            if user_info.get('insurance_number'):
+                pdf.cell(usable_width, 5, f"Krankenversicherungsnummer: {user_info.get('insurance_number')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            if user_info.get('dob'):
+                pdf.cell(usable_width, 5, f"Geburtsdatum: {user_info.get('dob')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            if user_info.get('address'):
+                pdf.cell(usable_width, 5, f"Adresse: {user_info.get('address')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            if user_info.get('phone'):
+                pdf.cell(usable_width, 5, f"Telefon: {user_info.get('phone')}".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.ln(5)
 
         # --- Benefits Display ---
         if benefits_data and benefits_data.get('leistungen'):
