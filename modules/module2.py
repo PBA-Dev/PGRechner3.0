@@ -58,7 +58,7 @@ module2 = {
             ]
         },
         {
-            "question": "2.6 Treffen von Entscheidungen im Alltagsleben",
+            "question": "2.6 Treffen von Entscheidungen im Alltag",
             "explanation": "Bewertet wird die Fähigkeit, einfache Alltagsentscheidungen zu treffen (z.B. Kleiderwahl, Essensauswahl).",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person kann Entscheidungen selbstständig treffen."},

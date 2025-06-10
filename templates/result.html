@@ -125,24 +125,44 @@
                                         {# Check if module_answers_dict is actually a dictionary #}
                                         {% if module_answers_dict is mapping %}
                                             <ul class="list-group list-group-flush"> {# Use flush for better spacing #}
-                                                {# ======================================================== #}
-                                                {# *** CORRECTED INNER LOOP STARTS HERE (Fixes Error) *** #}
-                                                {# Iterate directly over module_answers_dict items #}
-                                                {% for q_key, answer_data in module_answers_dict.items() | sort %}
-                                                {# ======================================================== #}
-                                                    {# Check if it's a valid answer dict and not the notes key #}
-                                                    {% if q_key != 'notes' and answer_data is mapping and 'question' in answer_data %}
-                                                        <li class="list-group-item">
-                                                            <p class="mb-1"><strong>Frage:</strong> {{ answer_data.question }}</p>
-                                                            {% if answer_data.type == 'frequency' %}
-                                                                <p class="mb-0 small text-muted"><strong>Häufigkeit:</strong> {{ answer_data.count }}x pro {{ answer_data.unit }} ({{ answer_data.score }} Rohpunkte)</p>
-                                                            {% else %}
-                                                                <p class="mb-0 small text-muted"><strong>Antwort:</strong> {{ answer_data.answer_text }} ({{ answer_data.score }} Rohpunkte)</p>
-                                                            {% endif %}
-                                                        </li>
-                                                    {% endif %}
-                                                {% endfor %} {# End inner loop q_key #}
-                                            </ul>
+{% if current_module_info.id == 5 %}
+    {% for part in current_module_info.parts %}
+        <li class="list-group-item active"><strong>{{ part.part_id }}: {{ part.name }}</strong></li>
+        {% for question in part.questions %}
+            {% set answer_data = module_answers_dict.get(question.id, {}) %}
+            <li class="list-group-item">
+                <p class="mb-1"><strong>Frage:</strong> {{ question.text }}</p>
+                {% if question.get('type') == 'frequency' %}
+                    {% if answer_data %}
+                        <p class="mb-0 small text-muted"><strong>Häufigkeit:</strong> {{ answer_data.count }}x pro {{ answer_data.unit }} ({{ answer_data.score }} Rohpunkte)</p>
+                    {% else %}
+                        <p class="mb-0 small text-muted">Keine Antwort</p>
+                    {% endif %}
+                {% else %}
+                    {% if answer_data %}
+                        <p class="mb-0 small text-muted"><strong>Antwort:</strong> {{ answer_data.answer_text }} ({{ answer_data.score }} Rohpunkte)</p>
+                    {% else %}
+                        <p class="mb-0 small text-muted">Keine Antwort</p>
+                    {% endif %}
+                {% endif %}
+            </li>
+        {% endfor %}
+    {% endfor %}
+{% else %}
+    {% for question in current_module_info.questions %}
+        {% set q_key = loop.index0 | string %}
+        {% set answer_data = module_answers_dict.get(q_key, {}) %}
+        <li class="list-group-item">
+            <p class="mb-1"><strong>Frage:</strong> {{ question.text }}</p>
+            {% if answer_data %}
+                <p class="mb-0 small text-muted"><strong>Antwort:</strong> {{ answer_data.answer_text }} ({{ answer_data.score }} Rohpunkte)</p>
+            {% else %}
+                <p class="mb-0 small text-muted">Keine Antwort</p>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+{% endif %}
                                             {# Display notes if they exist for this module (check notes key within module_answers_dict) #}
                                             {% if module_answers_dict.notes %}
                                                 <div class="mt-3 border-top pt-3">
