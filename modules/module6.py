@@ -8,7 +8,7 @@ module6 = {
     "weight": 0.15,
     "questions": [
         {
-            "question": "6.1 Gestaltung des Tagesablaufs und Anpassung an Veränderungen",
+            "text": "6.1 Gestaltung des Tagesablaufs und Anpassung an Veränderungen",
             "explanation": "Bewertet wird die Fähigkeit, den eigenen Tagesablauf nach persönlichen Vorlieben zu gestalten und sich auf Änderungen einzustellen.",
             "options": [
                 {"score": 0, "text": "Selbstständig", "option_explanation": "Person kann den Tagesablauf selbstständig gestalten und anpassen."},
@@ -18,7 +18,7 @@ module6 = {
             ]
         },
         {
-            "question": "6.2 Ruhen und Schlafen",
+            "text": "6.2 Ruhen und Schlafen",
             "explanation": "Bewertet wird die Fähigkeit, Ruhephasen und den Nachtschlaf nach eigenem Bedürfnis zu gestalten (z.B. zu Bett gehen, aufstehen).",
             "options": [
                 {"score": 0, "text": "Selbstständig", "option_explanation": "Person kann Ruhe- und Schlafzeiten selbstständig bestimmen und einhalten."},
@@ -28,7 +28,7 @@ module6 = {
             ]
         },
         {
-            "question": "6.3 Sich beschäftigen",
+            "text": "6.3 Sich beschäftigen",
             "explanation": "Bewertet wird die Fähigkeit, sich selbstständig mit Dingen zu beschäftigen, die von persönlichem Interesse sind.",
             "options": [
                 {"score": 0, "text": "Selbstständig", "option_explanation": "Person kann sich selbstständig und sinnvoll beschäftigen."},
@@ -38,7 +38,7 @@ module6 = {
             ]
         },
         {
-            "question": "6.4 Vornehmen von in die Zukunft gerichteten Planungen",
+            "text": "6.4 Vornehmen von in die Zukunft gerichteten Planungen",
             "explanation": "Bewertet wird die Fähigkeit, zukünftige Aktivitäten oder Ereignisse (z.B. Arzttermine, Besuche, Einkäufe) zu planen.",
             "options": [
                 {"score": 0, "text": "Selbstständig", "option_explanation": "Person kann selbstständig planen."},
@@ -48,7 +48,7 @@ module6 = {
             ]
         },
         {
-            "question": "6.5 Interaktion mit Personen im direkten Kontakt",
+            "text": "6.5 Interaktion mit Personen im direkten Kontakt",
             "explanation": "Bewertet wird die Fähigkeit, im direkten Kontakt mit bekannten oder unbekannten Personen angemessen zu interagieren.",
             "options": [
                 {"score": 0, "text": "Selbstständig", "option_explanation": "Person kann Interaktionen selbstständig und angemessen gestalten."},
@@ -58,7 +58,7 @@ module6 = {
             ]
         },
         {
-            "question": "6.6 Kontaktpflege zu Personen außerhalb des direkten Umfelds",
+            "text": "6.6 Kontaktpflege zu Personen außerhalb des direkten Umfelds",
             "explanation": "Bewertet wird die Fähigkeit, Kontakte zu Angehörigen, Freunden oder Bekannten aufrechtzuerhalten (z.B. Telefonieren, Briefe schreiben, Besuche empfangen/machen).",
             "options": [
                 {"score": 0, "text": "Selbstständig", "option_explanation": "Person kann Kontakte selbstständig pflegen."},

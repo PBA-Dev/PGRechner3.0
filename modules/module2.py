@@ -8,7 +8,7 @@ module2 = {
     "weight": 0.15, # Placeholder weight, actual calculation might differ based on NBA rules
     "questions": [
         {
-            "question": "2.1 Erkennen von Personen aus dem näheren Umfeld",
+            "text": "2.1 Erkennen von Personen aus dem näheren Umfeld",
             "explanation": "Bewertet wird die Fähigkeit, vertraute Personen (Angehörige, Pflegekräfte) zu erkennen.",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person erkennt vertraute Personen sicher."},
@@ -18,7 +18,7 @@ module2 = {
             ]
         },
         {
-            "question": "2.2 Örtliche Orientierung",
+            "text": "2.2 Örtliche Orientierung",
             "explanation": "Bewertet wird die Fähigkeit, sich in der räumlichen Umgebung (Wohnung, Einrichtung) zurechtzufinden.",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person ist sicher orientiert bezüglich des Aufenthaltsortes (z.B. Zuhause, Krankenhaus)."},
@@ -28,7 +28,7 @@ module2 = {
             ]
         },
         {
-            "question": "2.3 Zeitliche Orientierung",
+            "text": "2.3 Zeitliche Orientierung",
             "explanation": "Bewertet wird das Wissen über Datum, Wochentag, Tageszeit oder Jahreszeit.",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person ist sicher zur Zeit orientiert (Datum, Tag, Tageszeit)."},
@@ -38,7 +38,7 @@ module2 = {
             ]
         },
         {
-            "question": "2.4 Erinnerung an wesentliche Ereignisse oder Beobachtungen",
+            "text": "2.4 Erinnerung an wesentliche Ereignisse oder Beobachtungen",
             "explanation": "Bewertet wird die Fähigkeit, sich an kurz zurückliegende Ereignisse zu erinnern (Kurzzeitgedächtnis).",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person kann sich an Ereignisse der letzten Stunden/Tage erinnern."},
@@ -48,7 +48,7 @@ module2 = {
             ]
         },
         {
-            "question": "2.5 Steuern von mehrschrittigen Alltagshandlungen",
+            "text": "2.5 Steuern von mehrschrittigen Alltagshandlungen",
             "explanation": "Bewertet wird die Fähigkeit, Handlungen mit mehreren Schritten zu planen und durchzuführen (z.B. Tisch decken, Kaffee kochen).",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person kann komplexe Handlungen selbstständig planen und durchführen."},
@@ -58,7 +58,7 @@ module2 = {
             ]
         },
         {
-            "question": "2.6 Treffen von Entscheidungen im Alltag",
+            "text": "2.6 Treffen von Entscheidungen im Alltag",
             "explanation": "Bewertet wird die Fähigkeit, einfache Alltagsentscheidungen zu treffen (z.B. Kleiderwahl, Essensauswahl).",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person kann Entscheidungen selbstständig treffen."},
@@ -68,7 +68,7 @@ module2 = {
             ]
         },
         {
-            "question": "2.7 Verstehen von Sachverhalten und Informationen",
+            "text": "2.7 Verstehen von Sachverhalten und Informationen",
             "explanation": "Bewertet wird die Fähigkeit, Informationen und Erklärungen zu verstehen.",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person versteht komplexe Informationen und Erklärungen."},
@@ -78,7 +78,7 @@ module2 = {
             ]
         },
         {
-            "question": "2.8 Erkennen von Risiken und Gefahren",
+            "text": "2.8 Erkennen von Risiken und Gefahren",
             "explanation": "Bewertet wird die Fähigkeit, alltägliche Risiken (z.B. heiße Herdplatte, Stolperfallen) zu erkennen und angemessen zu reagieren.",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person erkennt Risiken und handelt entsprechend."},
@@ -88,7 +88,7 @@ module2 = {
             ]
         },
         {
-            "question": "2.9 Mitteilen von elementaren Bedürfnissen",
+            "text": "2.9 Mitteilen von elementaren Bedürfnissen",
             "explanation": "Bewertet wird die Fähigkeit, grundlegende Bedürfnisse (Hunger, Durst, Schmerz) verbal oder nonverbal mitzuteilen.",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person kann Bedürfnisse klar und zeitgerecht mitteilen."},
@@ -98,7 +98,7 @@ module2 = {
             ]
         },
         {
-            "question": "2.10 Verstehen von Aufforderungen",
+            "text": "2.10 Verstehen von Aufforderungen",
             "explanation": "Bewertet wird die Fähigkeit, verbale Aufforderungen zu verstehen und darauf zu reagieren.",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person versteht auch komplexere Aufforderungen."},
@@ -108,7 +108,7 @@ module2 = {
             ]
         },
          {
-            "question": "2.11 Beteiligen an einem Gespräch",
+            "text": "2.11 Beteiligen an einem Gespräch",
             "explanation": "Bewertet wird die Fähigkeit, sich an einem Gespräch zu beteiligen, zuzuhören und eigene Beiträge zu machen.",
             "options": [
                 {"score": 0, "text": "Fähigkeit vorhanden", "option_explanation": "Person kann sich aktiv und themenbezogen an Gesprächen beteiligen."},
