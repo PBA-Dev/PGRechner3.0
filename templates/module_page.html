@@ -125,7 +125,7 @@
                                         <input class="form-check-input" type="radio"
                                                name="answer_{{ module_id }}_{{ question_key }}"
                                                id="option_{{ module_id }}_{{ question_key }}_{{ opt_idx }}"
-                                                value="{{ opt_idx }}"
+                                               value="{{ opt_idx }}"
                                                data-score="{{ option.score if option.score is defined else 0 }}"
                                                data-module-id="{{ module_id }}"
                                                data-question-id="{{ question_key }}"
@@ -266,18 +266,12 @@
             }
         }
 
-        // --- Sticky Progress Bar Logic ---
+                // --- Sticky Progress Bar Logic ---
         const weightedMappings = JSON.parse(document.getElementById('weighted-mappings-data').textContent);
         const moduleScoresWeighted = JSON.parse(document.getElementById('module-scores-weighted').textContent);
         const thresholds = JSON.parse(document.getElementById('thresholds-data').textContent);
         const currentModuleId = {{ module_id }};
         const maxScore = {{ max_score }};
-        let baseScore = 0;
-        for (const [mid, sc] of Object.entries(moduleScoresWeighted)) {
-            if (parseInt(mid) !== currentModuleId) {
-                baseScore += parseFloat(sc);
-            }
-        }
 
         function mapRawToWeighted(moduleId, raw) {
             const table = weightedMappings[moduleId];
@@ -358,12 +352,23 @@
         function updateProgress() {
             let raw = currentModuleId == 5 ? calculateModule5Raw() : calculateStandardRaw();
             const weighted = mapRawToWeighted(currentModuleId, raw);
-            const total = baseScore + weighted;
+
+            // Update local copy so repeated calls use latest value
+            moduleScoresWeighted[currentModuleId.toString()] = weighted;
+
+            const m1 = parseFloat(moduleScoresWeighted['1'] || 0);
+            const m2 = parseFloat(moduleScoresWeighted['2'] || 0);
+            const m3 = parseFloat(moduleScoresWeighted['3'] || 0);
+            const m4 = parseFloat(moduleScoresWeighted['4'] || 0);
+            const m5 = parseFloat(moduleScoresWeighted['5'] || 0);
+            const m6 = parseFloat(moduleScoresWeighted['6'] || 0);
+
+            const total = m1 + Math.max(m2, m3) + m4 + m5 + m6;
             const percent = Math.min(100, (total / maxScore) * 100);
             document.getElementById('progressBar').style.width = percent.toFixed(1) + '%';
             document.getElementById('currentScoreLabel').textContent = total.toFixed(1) + ' Pkt.';
             const pg = determinePflegegrad(total);
-            document.getElementById('progressPg').textContent = pg ? 'PG'+pg : '-';
+            document.getElementById('progressPg').textContent = pg ? 'PG' + pg : '-';
         }
 
         document.querySelectorAll('[data-module-id="'+currentModuleId+'"]').forEach(el => {
