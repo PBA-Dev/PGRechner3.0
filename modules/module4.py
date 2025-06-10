@@ -88,9 +88,9 @@ module4 = {
             'explanation': 'Beinhaltet das Führen des Essens zum Mund, Abbeißen, Kauen, Schlucken.',
             'options': [
                 {'text': 'Selbständig', 'score': 0},
-                {'text': 'Überwiegend selbständig', 'score': 1},
-                {'text': 'Überwiegend unselbständig', 'score': 2},
-                {'text': 'Unselbständig', 'score': 3}
+                {'text': 'Überwiegend selbständig', 'score': 3},
+                {'text': 'Überwiegend unselbständig', 'score': 6},
+                {'text': 'Unselbständig', 'score': 9}
             ]
         },
         {
@@ -99,9 +99,9 @@ module4 = {
             'explanation': 'Beinhaltet das Ergreifen des Trinkgefäßes, Führen zum Mund, Trinken.',
             'options': [
                 {'text': 'Selbständig', 'score': 0},
-                {'text': 'Überwiegend selbständig', 'score': 1},
-                {'text': 'Überwiegend unselbständig', 'score': 2},
-                {'text': 'Unselbständig', 'score': 3}
+                {'text': 'Überwiegend selbständig', 'score': 2},
+                {'text': 'Überwiegend unselbständig', 'score': 4},
+                {'text': 'Unselbständig', 'score': 6}
             ]
         },
         {
@@ -110,9 +110,9 @@ module4 = {
             'explanation': 'Umfasst Hinsetzen, Aufstehen, Sitzen während der Blasen-/Darmentleerung, Intimhygiene, Richten der Kleidung.',
             'options': [
                 {'text': 'Selbständig', 'score': 0},
-                {'text': 'Überwiegend selbständig', 'score': 1},
-                {'text': 'Überwiegend unselbständig', 'score': 2},
-                {'text': 'Unselbständig', 'score': 3}
+                {'text': 'Überwiegend selbständig', 'score': 2},
+                {'text': 'Überwiegend unselbständig', 'score': 4},
+                {'text': 'Unselbständig', 'score': 6}
             ]
         },
         {
@@ -144,7 +144,7 @@ module4 = {
             'explanation': 'Bewertung der Notwendigkeit künstlicher Ernährung.',
             'options': [
                 {'text': 'Keine, nicht täglich, nicht auf Dauer', 'score': 0}, # Assuming 0 points based on doc example 'x' placement
-                {'text': 'Täglich, zusätzlich zu oraler Nahrung', 'score': 1}, # Assuming 1 point
+                {'text': 'Täglich, zusätzlich zu oraler Nahrung', 'score': 6}, # Assuming 1 point
                 {'text': 'Ausschließlich oder nahezu ausschließlich', 'score': 3} # Assuming 3 points (needs verification)
                 # NOTE: The exact scoring (0, 1, 3?) needs verification against official NBA guidelines.
                 # The document example only shows 'x' under the first column (0 points).

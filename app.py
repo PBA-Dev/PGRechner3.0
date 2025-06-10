@@ -241,12 +241,16 @@ def module_page(module_id):
     all_session_answers = session.get('module_answers', {})
     for mid_str, answers in all_session_answers.items():
         mid = int(mid_str)
-        if mid not in all_modules: continue
+        if mid not in all_modules:
+            continue
 
-        raw_score = 0.0
-        for q_key, answer_data in answers.items():
-             if q_key not in ['notes', 'visited'] and isinstance(answer_data, dict):
-                 raw_score += answer_data.get('score', 0)
+        if mid == 5:
+            raw_score = calculate_module5_raw_score(answers)
+        else:
+            raw_score = 0.0
+            for q_key, answer_data in answers.items():
+                if q_key not in ['notes', 'visited'] and isinstance(answer_data, dict):
+                    raw_score += answer_data.get('score', 0)
         temp_module_scores_raw[mid_str] = raw_score
         temp_module_scores_weighted[mid_str] = map_raw_to_weighted_score(mid, raw_score)
 
@@ -445,13 +449,18 @@ def calculate():
         current_module_raw_score = 0.0
         current_detailed_answers = {}
 
-        # Iterate through the stored answers for the module
-        # Exclude 'notes' and 'visited' keys from score calculation
-        for q_key, answer_data in answers.items():
-            if q_key not in ['notes', 'visited'] and isinstance(answer_data, dict):
-                current_module_raw_score += answer_data.get('score', 0)
-                current_detailed_answers[q_key] = answer_data # Store details (question text, answer text, score)
-
+        if module_id == 5:
+            current_module_raw_score = calculate_module5_raw_score(answers)
+            for q_key, answer_data in answers.items():
+                if q_key not in ['notes', 'visited'] and isinstance(answer_data, dict):
+                    current_detailed_answers[q_key] = answer_data
+        else:
+            # Iterate through the stored answers for the module
+            # Exclude 'notes' and 'visited' keys from score calculation
+            for q_key, answer_data in answers.items():
+                if q_key not in ['notes', 'visited'] and isinstance(answer_data, dict):
+                    current_module_raw_score += answer_data.get('score', 0)
+                    current_detailed_answers[q_key] = answer_data  # Store details
         module_scores_raw[module_id_str] = current_module_raw_score
         all_detailed_answers[module_id_str] = current_detailed_answers
 
