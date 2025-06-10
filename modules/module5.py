@@ -158,7 +158,7 @@ module5 = {
             'name': 'Teil 5: Diät und Verhaltensvorschriften',
              'questions': [
                  {
-                    'id': '5.5.1 Einhaltung einer Diät und anderer krankheits- oder therapiebedingter Verhaltensvorschriften',
+                    'id': '5.5.1',
                     'question': '5.5.1 Einhaltung einer Diät und anderer krankheits- oder therapiebedingter Verhaltensvorschriften',
                     'explanation': 'Fähigkeit, Diätpläne oder spezielle Verhaltensregeln einzuhalten.',
                     'options': [
