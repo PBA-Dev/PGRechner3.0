@@ -109,7 +109,7 @@ module3 = {
             ]
         },
         {
-            "question": "3.11 Antriebslosigkeit bei vorhandener Aktivierungsfähigkeit",
+            "question": "3.11 Antriebslosigkeit bei depressiver Stimmungslage",
             "explanation": "Bewertet wird mangelnder Antrieb oder Initiative, obwohl die Person körperlich dazu fähig wäre und aktiviert werden kann.",
              "options": [
                 {"score": 0, "text": "Nie oder sehr selten", "option_explanation": "Keine Antriebslosigkeit."},
@@ -119,7 +119,7 @@ module3 = {
             ]
         },
         {
-            "question": "3.12 Depressive Stimmungslage",
+            "question": "3.12 Sozial inadäquate Verhaltensweisen",
             "explanation": "Bewertet wird das Vorhandensein von Traurigkeit, Hoffnungslosigkeit, sozialem Rückzug.",
              "options": [
                 {"score": 0, "text": "Nie oder sehr selten", "option_explanation": "Keine depressive Stimmung."},
@@ -129,7 +129,7 @@ module3 = {
             ]
         },
         {
-            "question": "3.13 Unangemessenes Verhalten in sozialen Situationen",
+            "question": "3.13 Sonstige pflegerelevante inadäquate Handlungen",
             "explanation": "Bewertet wird sozial unangepasstes Verhalten wie Distanzlosigkeit, sexuell übergriffiges Verhalten, lautes Schimpfen in der Öffentlichkeit.",
              "options": [
                 {"score": 0, "text": "Nie oder sehr selten", "option_explanation": "Verhalten tritt praktisch nicht auf."},
