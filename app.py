@@ -84,6 +84,107 @@ def calculate_frequency_score(count, unit):
     elif 'monat' in unit or 'month' in unit: return 1
     else: return 0
 
+def _freq_per_day(count, unit):
+    """Convert a frequency specification to an average per day."""
+    try:
+        cnt = float(count)
+        if cnt < 0:
+            cnt = 0.0
+    except (ValueError, TypeError):
+        cnt = 0.0
+
+    unit = str(unit).lower()
+    if 'tag' in unit or 'day' in unit:
+        return cnt
+    if 'woche' in unit or 'week' in unit:
+        return cnt / 7.0
+    if 'monat' in unit or 'month' in unit:
+        return cnt / 30.0
+    return 0.0
+
+def calculate_module5_raw_score(answers):
+    """Calculate the raw score for module 5 according to the official guide."""
+    answers = answers or {}
+
+    # --- Part 1: F 4.5.1 bis F 4.5.7 ---
+    part1_ids = [f'5.1.{i}' for i in range(1, 8)]
+    sum_per_day = sum(_freq_per_day(answers.get(q, {}).get('count'),
+                                    answers.get(q, {}).get('unit'))
+                      for q in part1_ids)
+    sum_per_day = round(sum_per_day, 4)
+    if sum_per_day < 1:
+        part1_score = 0
+    elif sum_per_day <= 3:
+        part1_score = 1
+    elif sum_per_day <= 8:
+        part1_score = 2
+    else:
+        part1_score = 3
+
+    # --- Part 2: F 4.5.8 bis F 4.5.11 ---
+    part2_ids = [f'5.2.{i}' for i in range(1, 5)]
+    sum_per_day2 = sum(_freq_per_day(answers.get(q, {}).get('count'),
+                                     answers.get(q, {}).get('unit'))
+                       for q in part2_ids)
+    sum_per_day2 = round(sum_per_day2, 4)
+    if sum_per_day2 < 1/7:
+        part2_score = 0
+    elif sum_per_day2 < 1:
+        part2_score = 1
+    elif sum_per_day2 < 3:
+        part2_score = 2
+    else:
+        part2_score = 3
+
+    # --- Part 3: F 4.5.12 bis F 4.5.15 ---
+    mapping = {
+        '5.3.1': {'monthly': 2.0, 'weekly': 8.6, 'daily': 60.0},  # F 4.5.12
+        '5.4.1': {'monthly': 1.0, 'weekly': 4.3},                 # F 4.5.13
+        '5.4.2': {'monthly': 1.0, 'weekly': 4.3},                 # F 4.5.14
+        '5.4.3': {'monthly': 2.0, 'weekly': 8.6}                  # F 4.5.15
+    }
+
+    total_points = 0.0
+    for qid, rules in mapping.items():
+        data = answers.get(qid, {})
+        if not data:
+            continue
+        try:
+            cnt = float(data.get('count', 0))
+            if cnt <= 0:
+                continue
+        except (ValueError, TypeError):
+            continue
+        unit = str(data.get('unit', '')).lower()
+        if 'tag' in unit and 'daily' in rules:
+            total_points += rules.get('daily', 0.0)
+        elif 'tag' in unit:
+            # Daily values are not expected for the others; treat as weekly
+            total_points += cnt * rules.get('weekly', 0.0)
+        elif 'woche' in unit or 'week' in unit:
+            total_points += cnt * rules.get('weekly', 0.0)
+        elif 'monat' in unit or 'month' in unit:
+            total_points += cnt * rules.get('monthly', 0.0)
+
+    total_points = round(total_points, 4)
+    if total_points < 4.3:
+        part3_score = 0
+    elif total_points < 8.6:
+        part3_score = 1
+    elif total_points < 12.9:
+        part3_score = 2
+    elif total_points < 60:
+        part3_score = 3
+    else:
+        part3_score = 6
+
+    # --- Part 4: F 4.5.16 ---
+    part4_score = int(answers.get('5.5.1', {}).get('score', 0))
+
+    return part1_score + part2_score + part3_score + part4_score
+
+
+
 # --- Routes ---
 
 @app.route('/')
