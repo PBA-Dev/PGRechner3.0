@@ -224,6 +224,12 @@
 
             {# --- Navigation Buttons (using Bootstrap classes) --- #}
             <div class="d-flex justify-content-between mt-4">
+            <div class="d-flex justify-content-between flex-wrap gap-2 mt-4">
+                <a href="{{ url_for('restart') }}" class="btn btn-danger">
+                    <i class="bi bi-arrow-repeat"></i> Neu starten
+                </a>
+
+
                 {% if module_id > 1 %}
                     <a href="{{ url_for('module_page', module_id=module_id-1) }}" class="btn btn-secondary">
                         <i class="bi bi-arrow-left"></i> Zurück zu Modul {{ module_id - 1 }}
@@ -231,6 +237,9 @@
                 {% else %}
                     <span></span> {# Placeholder to keep button alignment #}
                 {% endif %}
+
+                <button type="button" class="btn btn-warning" onclick="setAllZero()">Nichts davon trifft zu</button>
+
 
                 <button type="submit" class="btn btn-primary">
                     {% if module_id == TOTAL_MODULES %}
@@ -369,9 +378,28 @@
             const percent = Math.min(100, (total / maxScore) * 100);
             document.getElementById('progressBar').style.width = percent.toFixed(1) + '%';
             document.getElementById('currentScoreLabel').textContent = total.toFixed(1) + ' Pkt.';
+            document.getElementById('progressTotal').textContent = total.toFixed(1) + ' Pkt.';
             const pg = determinePflegegrad(total);
             document.getElementById('progressPg').textContent = pg ? 'PG' + pg : '-';
         }
+
+        function setAllZero() {
+            document.querySelectorAll('input[type="radio"][data-module-id="'+currentModuleId+'"]').forEach(function(r){
+                if (r.dataset.score === '0') {
+                    r.checked = true;
+                } else {
+                    r.checked = false;
+                }
+            });
+            document.querySelectorAll('input[type="number"][data-module-id="'+currentModuleId+'"]').forEach(function(inp){
+                inp.value = 0;
+            });
+            document.querySelectorAll('select[data-module-id="'+currentModuleId+'"]').forEach(function(sel){
+                sel.selectedIndex = 0;
+            });
+            updateProgress();
+        }
+
 
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('[data-module-id="'+currentModuleId+'"]').forEach(el => {

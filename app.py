@@ -200,11 +200,16 @@ def intro():
     # Clear any previous session data at the start
     session.pop('answers', None)
     session.pop('results', None)
+    # Clear all previous session data so old answers are not reused
+    session.clear()    
     return render_template('intro.html')
 
 @app.route('/start', methods=['POST'])
 def start():
     """Stores Berater and Klient information then starts the questionnaire."""
+        # Ensure no leftover answers from a previous run remain
+    session.pop('module_answers', None)
+    session.pop('results', None)
     session['user_info'] = {
         'berater_name': request.form.get('berater_name', '').strip(),
         'client_name': request.form.get('client_name', '').strip(),
@@ -215,6 +220,11 @@ def start():
     }
     return redirect(url_for('module_page', module_id=1))
 
+@app.route('/restart')
+def restart():
+    """Clears the session and returns to the intro page."""
+    session.clear()
+    return redirect(url_for('intro'))
 
 
 
