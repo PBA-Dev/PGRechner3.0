@@ -486,3 +486,10 @@ hr.progress-separator {
 .hidden {
     display: none;
 }
+
+/* Logo on intro page */
+.logo {
+    max-width: 180px;
+    margin: 0 auto 20px auto;
+    display: block;
+}

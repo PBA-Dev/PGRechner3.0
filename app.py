@@ -652,12 +652,37 @@ def generate_pdf():
 
 
         # --- PDF Generation Logic ---
+        logo_url = "https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg"
+
         pdf = FPDF()
-        pdf.add_page()
         usable_width = pdf.w - pdf.l_margin - pdf.r_margin
-        pdf.set_font("Arial", size=12) # Using core font
 
         # Company Header
+                # --- Cover Page ---
+        pdf.add_page()
+        try:
+            pdf.image(logo_url, x=(pdf.w - 60) / 2, w=60)
+        except Exception:
+            pass  # Ignore logo errors
+        pdf.ln(20)
+        pdf.set_font("Arial", 'B', 20)
+        pdf.cell(usable_width, 12, "Optimum Pflegeberatung".encode('latin-1', 'replace').decode('latin-1'),
+                  new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
+        pdf.set_font("Arial", '', 14)
+        pdf.cell(usable_width, 10, "Pflegegrad Management Service".encode('latin-1', 'replace').decode('latin-1'),
+                  new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
+        pdf.ln(60)
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(usable_width, 10, "Ergebnisbericht".encode('latin-1', 'replace').decode('latin-1'),
+                  new_x=XPos.LMARGIN, new_y=YPos.NEXT, align='C')
+
+        # --- Info Page ---
+        pdf.add_page()
+        try:
+            pdf.image(logo_url, x=(pdf.w - 40) / 2, w=40)
+        except Exception:
+            pass
+        pdf.ln(10)
         pdf.set_font("Arial", 'B', 14)
         pdf.multi_cell(usable_width, 8, "Optimum Pflegeberatung".encode('latin-1', 'replace').decode('latin-1'),
                        align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
@@ -669,15 +694,9 @@ def generate_pdf():
         pdf.ln(5)
 
 
-        # --- Title ---
-        pdf.set_font("Arial", 'B', 16)
-        pdf.multi_cell(usable_width, 10, "Pflegegradrechner - Ergebnisbericht".encode('latin-1', 'replace').decode('latin-1'),
-                       align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-        pdf.ln(10)
-
         # --- Summary ---
         pdf.set_font("Arial", 'B', 12)
-        pdf.cell(usable_width, 10, "Zusammenfassung".encode('latin-1', 'replace').decode('latin-1'),
+        pdf.cell(usable_width, 8, "Zusammenfassung".encode('latin-1', 'replace').decode('latin-1'),
                  new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.set_font("Arial", size=12)
         score_text = f"Gesamtpunktzahl (fuer Pflegegrad): {final_total_score:.2f}"
@@ -688,7 +707,7 @@ def generate_pdf():
                  new_x=XPos.LMARGIN, new_y=YPos.NEXT)
         pdf.ln(5)
 
-                # User / Client Information
+        # User / Client Information
         if user_info:
             pdf.set_font("Arial", 'B', 12)
             pdf.cell(usable_width, 8, "Daten".encode('latin-1', 'replace').decode('latin-1'), new_x=XPos.LMARGIN, new_y=YPos.NEXT)
@@ -725,10 +744,6 @@ def generate_pdf():
                                 new_x=XPos.LMARGIN, new_y=YPos.NEXT)
              pdf.ln(5)
 
-        # --- Detailed Results ---
-        pdf.set_font("Arial", 'B', 12)
-        pdf.cell(usable_width, 10, "Detailergebnisse nach Modulen".encode('latin-1', 'replace').decode('latin-1'),
-                 new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
         module_answers_all = detailed_results.get('answers', {})
         module_scores_raw = detailed_results.get('module_scores_raw', {})
@@ -737,7 +752,8 @@ def generate_pdf():
 
         if isinstance(module_answers_all, dict):
             for module_id_str in sorted(module_answers_all.keys(), key=lambda x: int(x) if x.isdigit() else 999):
-                if not module_id_str.isdigit(): continue
+                if not module_id_str.isdigit():
+                    continue
 
                 module_id = int(module_id_str)
                 module_info = all_modules.get(module_id)
@@ -745,11 +761,12 @@ def generate_pdf():
 
                 if not module_info: continue
 
-                pdf.set_font("Arial", 'B', 11)
+                pdf.add_page()
+                pdf.set_font("Arial", 'B', 14)
                 module_name = module_info.get('name', f'Modul {module_id}')
-                pdf.cell(usable_width, 8, f"--- {module_name.encode('latin-1', 'replace').decode('latin-1')} ---",
+                pdf.cell(usable_width, 10, f"Modul {module_id}: {module_name}".encode('latin-1', 'replace').decode('latin-1'),
                          new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-                pdf.set_font("Arial", size=10)
+                pdf.set_font("Arial", size=11)
 
                 raw_score = module_scores_raw.get(module_id_str, 0.0)
                 weighted_score = module_scores_weighted.get(module_id_str, 0.0)
