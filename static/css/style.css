@@ -5,6 +5,7 @@
     --success-color: #28a745; /* Green for progress/success */
     --warning-color: #ffc107; /* Yellow for warnings */
     --danger-color: #dc3545; /* Red for errors */
+    --progress-bar-fill-color: #0056b3; /* Darker blue for progress bar */
     --light-bg: #f8f9fa; /* Very light gray background */
     --medium-gray: #ced4da; /* Borders, subtle elements */
     --dark-gray: #495057; /* Body text */
@@ -287,7 +288,7 @@ hr.progress-separator {
 }
 .progress-bar-fill {
     height: 100%;
-    background-color: var(--success-color); /* Use success green */
+    background-color: var(--progress-bar-fill-color); /* Use darker blue */
     border-radius: var(--border-radius);
     transition: width 0.6s ease;
     display: flex;
@@ -296,6 +297,11 @@ hr.progress-separator {
     position: relative;
     min-width: 30px;
 }
+
+#progressBar {
+    background-color: var(--progress-bar-fill-color);
+}
+
 .current-score-label {
     color: var(--text-light);
     font-weight: bold;

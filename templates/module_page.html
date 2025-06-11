@@ -55,8 +55,7 @@
                     </div>
                 </div>
             </div>
-            <p class="progress-note small text-muted mt-2">Pflegegrad aktuell: <span id="progressPg">-</span><br>*Dies ist eine Schätzung basierend auf den bisherigen Eingaben und ersetzt nicht die offizielle Begutachtung.</p>
-         </div>
+            <p class="progress-note small text-muted mt-2">Pflegegrad aktuell: <span id="progressPg">-</span> &ndash; Punkte: <span id="progressTotal">{{ current_estimated_score | round(1) }} Pkt.</span><br>*Dies ist eine Schätzung basierend auf den bisherigen Eingaben und ersetzt nicht die offizielle Begutachtung.</p>         </div>
         <hr class="progress-separator mb-4">
         {% endif %}
         {# --- End Progress Bar Section --- #}
@@ -193,6 +192,9 @@
                                        name="answer_{{ module_id }}_{{ question_index_str }}"
                                        id="option_{{ module_id }}_{{ question_index_str }}_{{ opt_idx }}"
                                        value="{{ opt_idx }}"
+                                       data-score="{{ option.score if option.score is defined else 0 }}"
+                                       data-module-id="{{ module_id }}"
+                                       data-question-id="{{ question_index_str }}"
                                        {% if current_answer_index is not none and current_answer_index == opt_idx %}checked{% endif %}
                                        required> 
                                 <label class="form-check-label" for="option_{{ module_id }}_{{ question_index_str }}_{{ opt_idx }}">
@@ -371,12 +373,14 @@
             document.getElementById('progressPg').textContent = pg ? 'PG' + pg : '-';
         }
 
-        document.querySelectorAll('[data-module-id="'+currentModuleId+'"]').forEach(el => {
-            el.addEventListener('change', updateProgress);
-            el.addEventListener('input', updateProgress);
-        });
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('[data-module-id="'+currentModuleId+'"]').forEach(el => {
+                el.addEventListener('change', updateProgress);
+                el.addEventListener('input', updateProgress);
+            });
 
-        updateProgress();
+                updateProgress();
+        });
 
 
         // Optional: Add CSS for the .hidden class if not already defined
