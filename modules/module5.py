@@ -159,7 +159,7 @@ module5 = {
              'questions': [
                  {
                     'id': '5.5.1',
-                    'question': '5.5.1 Einhaltung einer Diät und anderer krankheits- oder therapiebedingter Verhaltensvorschriften',
+                    'question': 'Einhaltung einer Diät und anderer krankheits- oder therapiebedingter Verhaltensvorschriften',
                     'explanation': 'Fähigkeit, Diätpläne oder spezielle Verhaltensregeln einzuhalten.',
                     'options': [
                         {'text': 'Entfällt/Selbständig', 'score': 0}, 

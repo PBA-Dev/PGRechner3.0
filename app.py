@@ -764,7 +764,7 @@ def generate_pdf():
                 pdf.add_page()
                 pdf.set_font("Arial", 'B', 14)
                 module_name = module_info.get('name', f'Modul {module_id}')
-                pdf.cell(usable_width, 10, f"Modul {module_id}: {module_name}".encode('latin-1', 'replace').decode('latin-1'),
+                pdf.cell(usable_width, 10, f"{module_name}".encode('latin-1', 'replace').decode('latin-1'),
                          new_x=XPos.LMARGIN, new_y=YPos.NEXT)
                 pdf.set_font("Arial", size=11)
 
@@ -783,13 +783,13 @@ def generate_pdf():
                     pdf.set_font("Arial", 'I', 9)
                     pdf.cell(usable_width, 5, note_text.encode('latin-1', 'replace').decode('latin-1'),
                              new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-                    pdf.set_font("Arial", size=10)
+                    pdf.set_font("Arial", size=11)
 
                 pdf.ln(2)
-                pdf.set_font("Arial", 'B', 10)
+                pdf.set_font("Arial", 'B', 12)
                 pdf.cell(usable_width, 6, "Antworten:".encode('latin-1', 'replace').decode('latin-1'),
                          new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-                pdf.set_font("Arial", size=9)
+                pdf.set_font("Arial", size=11)
 
                 if isinstance(module_answers, dict) and module_answers:
                     try:
@@ -829,7 +829,7 @@ def generate_pdf():
                     pdf.set_font("Arial", 'B', 10)
                     pdf.cell(usable_width, 6, "Notizen:".encode('latin-1', 'replace').decode('latin-1'),
                              new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-                    pdf.set_font("Arial", size=9)
+                    pdf.set_font("Arial", size=11)
                     pdf.multi_cell(usable_width, 5, module_note.encode('latin-1', 'replace').decode('latin-1'),
                                    new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
