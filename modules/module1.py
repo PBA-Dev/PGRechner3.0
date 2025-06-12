@@ -198,7 +198,7 @@ als „überwiegend unselbständig“.'''
                     'text': 'Selbständig',
                     'score': 0,
                     'option_explanation': (
-                        '''Die Person kann ohne Hilfe durch andere Personen in aufrechter Position eine
+                    '''Die Person kann ohne Hilfe durch andere Personen in aufrechter Position eine
 Treppe steigen.'''
                     )
                 },
@@ -234,7 +234,8 @@ eines Sturzrisikos (Anwesenheit aus Sicherheitsgründen).'''
 die einen spezifischen, außergewöhnlich hohen Hilfebedarf mit
 besonderen Anforderungen an die pflegerische Versorgung aufweisen, aus pflegefachlichen
 Gründen dem Pflegegrad 5 zugeordnet werden, auch wenn ihre
-Gesamtpunkte unter 90 liegen.''' + 
+Gesamtpunkte unter 90 liegen.''' 
+
 '''In Betracht kommen Pflegebedürftige, die rein nach Punkten den Pflegegrad 5
 nicht erreichen würden, dieser aber aufgrund der Schwere der Beeinträchtigung
 angemessen wäre. Als besondere Bedarfskonstellation ist nur die Gebrauchsunfähigkeit
@@ -244,15 +245,17 @@ rung im neuen Begutachtungsinstrument entziehen. Trotz vollständiger Abhängigk
 von personeller Hilfe ist es möglich, dass bei diesem Personenkreis im
 Bereich der Module 2 und 3 keine und im Bereich des Moduls 6 Beeinträchtigungen
 nur im geringen Maß vorliegen, so dass die Gesamtpunkte unter 90 liegen.
+
 Gebrauchsunfähigkeit beider Arme und beider Beine mit vollständigem
 Verlust der Greif-, Steh- und Gehfunktionen, die nicht durch Einsatz von
-Hilfsmitteln kompensiert werden''' 
-''' können, liegt vor, wenn die Person
+Hilfsmitteln kompensiert werden können, liegt vor, wenn die Person
 Das Kriterium erfasst in der Regel Personen mit einer Bewegungsunfähigkeit
 beider Arme und beider Beine unabhängig von der Ursache. Gebrauchsunfähigkeit
 beider Arme und beider Beine mit vollständigem Verlust der Greif-, Steh- und
 Gehfunktionen liegt zum Beispiel vor bei kompletten Lähmungen aller Extremitäten
-oder bei Menschen im Wachkoma. Auch bei hochgradigen Kontrakturen,
+oder bei Menschen im Wachkoma. 
+
+Auch bei hochgradigen Kontrakturen,
 Versteifungen, bei hochgradigem Tremor, Rigor oder Athetose kann die besondere
 Bedarfskonstellation vorliegen. Eine Gebrauchsunfähigkeit beider Arme
 und beider Beine liegt auch vor, wenn eine minimale Restbeweglichkeit der Arme
