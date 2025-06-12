@@ -428,6 +428,16 @@ def module_page_submit(module_id):
                         except ValueError: session['module_answers'][module_id_str].pop(question_key, None)
                     else: session['module_answers'][module_id_str].pop(question_key, None)
 
+                # --- Store question-specific note for Module 5 ---
+                note_key = f'note_{module_id}_{question_key}'
+                note_text = request.form.get(note_key, '').strip()
+                if note_text:
+                    session['module_answers'][module_id_str].setdefault(question_key, {}).update({'notes': note_text})
+                else:
+                    if question_key in session['module_answers'][module_id_str]:
+                        session['module_answers'][module_id_str][question_key].pop('notes', None)
+
+
     else: # Standard handling for modules 1, 2, 3, 4, 6
         for i, question in enumerate(module_data.get('questions', [])):
             question_index_str = str(i)
@@ -461,6 +471,16 @@ def module_page_submit(module_id):
                      session['module_answers'][module_id_str].pop(question_index_str, None)
             else:
                  session['module_answers'][module_id_str].pop(question_index_str, None)
+
+            # --- Store question-specific note for standard modules ---
+            note_key = f'note_{module_id}_{question_index_str}'
+            note_text = request.form.get(note_key, '').strip()
+            if note_text:
+                session['module_answers'][module_id_str].setdefault(question_index_str, {'question': question_text}).update({'notes': note_text})
+            else:
+                if question_index_str in session['module_answers'][module_id_str]:
+                    session['module_answers'][module_id_str][question_index_str].pop('notes', None)
+
 
     # --- Store Notes ---
     notes_key = f'module_{module_id}_notes'
@@ -764,8 +784,9 @@ def generate_pdf():
                 pdf.add_page()
                 pdf.set_font("Arial", 'B', 14)
                 module_name = module_info.get('name', f'Modul {module_id}')
-                pdf.cell(usable_width, 10, f"{module_name}".encode('latin-1', 'replace').decode('latin-1'),
-                         new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                pdf.multi_cell(usable_width, 10,
+                                f"Modul {module_id}: {module_name}".encode('latin-1', 'replace').decode('latin-1'),
+                                new_x=XPos.LMARGIN, new_y=YPos.NEXT)
                 pdf.set_font("Arial", size=11)
 
                 raw_score = module_scores_raw.get(module_id_str, 0.0)
@@ -798,13 +819,27 @@ def generate_pdf():
                          sorted_q_keys = sorted(module_answers.keys())
 
                     for q_key in sorted_q_keys:
-                        if q_key == 'notes': continue
+                        if q_key == 'notes':
+                            continue
 
                         answer_data = module_answers[q_key]
                         if isinstance(answer_data, dict):
                             q_text = answer_data.get('question', f'Frage {q_key}')
                             a_text = answer_data.get('answer_text', 'N/A')
                             a_score = answer_data.get('score', 'N/A')
+
+                            question_id = None
+                            if module_id in [1, 4] and q_key.isdigit():
+                                questions = module_info.get('questions', [])
+                                idx = int(q_key)
+                                if idx < len(questions):
+                                    question_id = questions[idx].get('id')
+                            elif module_id == 5:
+                                question_id = q_key
+
+                            if question_id:
+                                q_text = f"{question_id} {q_text}"
+
 
                             if answer_data.get('type') == 'frequency':
                                 count = answer_data.get('count', 'N/A')
@@ -815,6 +850,8 @@ def generate_pdf():
 
                             pdf.multi_cell(usable_width, 5, full_text.encode('latin-1', 'replace').decode('latin-1'),
                                            new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+                            pdf.ln(1)
+
                         else:
                              pdf.multi_cell(usable_width, 5, f"- Frage {q_key}: Ungültige Antwortdaten".encode('latin-1', 'replace').decode('latin-1'),
                                             new_x=XPos.LMARGIN, new_y=YPos.NEXT)

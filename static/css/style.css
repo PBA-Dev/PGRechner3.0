@@ -184,6 +184,26 @@ hr.progress-separator {
     transform: scale(1.1);
 }
 
+.info-toggle-icon {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 12px;
+    line-height: 20px;
+    text-align: center;
+    cursor: pointer;
+    margin-left: 6px;
+    padding: 0;
+    vertical-align: middle;
+}
+.info-toggle-icon:hover {
+    background-color: #138496;
+}
+
+
 .explanation {
     background-color: #e2f3f5; /* Light teal background */
     border-left: 4px solid var(--secondary-color);
@@ -486,6 +506,17 @@ hr.progress-separator {
 .hidden {
     display: none;
 }
+
+.option-info,
+.notes-field {
+    background-color: #f8f9fa;
+    border-left: 4px solid var(--secondary-color);
+    padding: 10px;
+    margin-top: 8px;
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+
 
 /* Logo on intro page */
 .logo {

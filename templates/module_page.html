@@ -131,8 +131,12 @@
                                                {% if current_answer_data and current_answer_data.get('option_index') == opt_idx %}checked{% endif %}
                                                required>
                                         <label class="form-check-label" for="option_{{ module.id }}_{{ question_key }}_{{ opt_idx }}">
-                                            {{ option.text }} {% if option.score is defined %}({{ option.score }} Pkt.){% endif %} {# Show score if defined #}
+                                            {{ option.text }} {% if option.score is defined %}({{ option.score }} Pkt.){% endif %}
                                         </label>
+                                        {% if option.option_explanation %}
+                                            <button type="button" class="btn btn-sm btn-outline-secondary info-toggle-icon" onclick="toggleOptionInfo(this)" title="Info anzeigen/verbergen">i</button>
+                                            <div class="option-info hidden mt-1 small text-muted">{{ option.option_explanation }}</div>
+                                        {% endif %}
                                     </div>
                                  {% endfor %}
 
@@ -152,10 +156,14 @@
                                                {% if current_answer_data and current_answer_data.get('option_index') == opt_idx %}checked{% endif %}
                                                required>
                                         <label class="form-check-label" for="option_{{ module.id }}_{{ question_key }}_{{ opt_idx }}">
-                                            {{ option.text }} {% if option.score is defined %}({{ option.score }} Pkt.){% endif %} {# Show score if defined #}
+                                            {{ option.text }} {% if option.score is defined %}({{ option.score }} Pkt.){% endif %}
                                         </label>
                                     </div>
                                  {% endfor %}
+                                <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="toggleNotes(this)">Notizen</button>
+                                <div class="notes-field hidden mt-2">
+                                    <textarea class="form-control form-control-sm" rows="2" name="note_{{ module_id }}_{{ question_key }}" placeholder="Notizen...">{{ current_answer_data.get('notes', '') }}</textarea>
+                                </div>
                             {% endif %}
                         </div> {# End question block #}
                     {% endfor %} {# End loop questions in part #}
@@ -198,10 +206,18 @@
                                        {% if current_answer_index is not none and current_answer_index == opt_idx %}checked{% endif %}
                                        required> 
                                 <label class="form-check-label" for="option_{{ module_id }}_{{ question_index_str }}_{{ opt_idx }}">
-                                    {{ option.text }} {% if option.score is defined %}({{ option.score }} Pkt.){% endif %} {# Show score if defined #}
+                                    {{ option.text }} {% if option.score is defined %}({{ option.score }} Pkt.){% endif %}
                                 </label>
+                                {% if option.option_explanation %}
+                                    <button type="button" class="btn btn-sm btn-outline-secondary info-toggle-icon" onclick="toggleOptionInfo(this)" title="Info anzeigen/verbergen">i</button>
+                                    <div class="option-info hidden mt-1 small text-muted">{{ option.option_explanation }}</div>
+                                {% endif %}
                             </div>
                         {% endfor %}
+                        <button type="button" class="btn btn-sm btn-outline-secondary mt-2" onclick="toggleNotes(this)">Notizen</button>
+                        <div class="notes-field hidden mt-2">
+                            <textarea class="form-control form-control-sm" rows="2" name="note_{{ module_id }}_{{ question_index_str }}" placeholder="Notizen...">{{ current_answer_data.get('notes', '') }}</textarea>
+                        </div>
                     </div> {# End question block #}
                 {% endfor %} {# End loop questions #}
             {% endif %}
@@ -276,6 +292,27 @@
                 }
             }
         }
+
+                function toggleOptionInfo(buttonElement) {
+            const formCheck = buttonElement.closest('.form-check');
+            if (formCheck) {
+                const infoDiv = formCheck.querySelector('.option-info');
+                if (infoDiv) {
+                    infoDiv.classList.toggle('hidden');
+                }
+            }
+        }
+
+        function toggleNotes(buttonElement) {
+            const block = buttonElement.closest('.question-block');
+            if (block) {
+                const notesDiv = block.querySelector('.notes-field');
+                if (notesDiv) {
+                    notesDiv.classList.toggle('hidden');
+                }
+            }
+        }
+
 
                 // --- Sticky Progress Bar Logic ---
         const weightedMappings = JSON.parse(document.getElementById('weighted-mappings-data').textContent);

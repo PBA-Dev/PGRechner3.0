@@ -10,10 +10,41 @@ module1 = {
             'text': 'Positionswechsel im Bett',
             'explanation': 'Fähigkeit, sich im Bett selbständig zu drehen und aufzurichten.',
             'options': [
-                {'text': 'Selbständig', 'score': 0},
-                {'text': 'Überwiegend selbständig', 'score': 1},
-                {'text': 'Überwiegend unselbständig', 'score': 2},
-                {'text': 'Unselbständig', 'score': 3} # Score 3 based on doc example
+                {
+                    'text': 'Selbständig',
+                    'score': 0,
+                    'option_explanation': (
+                        'Selbständig ist auch eine Person, die ihre Position unter '
+                        'Nutzung von Hilfsmitteln (Aufrichthilfe, Bettseitenteil, '
+                        'Strickleiter, elektrisch verstellbares Bett) allein verändern kann.'
+                    )
+                },
+                {
+                    'text': 'Überwiegend selbständig',
+                    'score': 1,
+                    'option_explanation': (
+                        'Die Person kann beispielsweise nach Anreichen eines Hilfsmittels '
+                        'oder Reichen der Hand ihre Lage im Bett verändern.'
+                    )
+                },
+                {
+                    'text': 'Überwiegend unselbständig',
+                    'score': 2,
+                    'option_explanation': (
+                        'Die Person kann beim Positionswechsel nur wenig mithelfen, zum '
+                        'Beispiel auf den Rücken rollen, am Bettgestell festhalten, oder '
+                        'zum Lagern die Arme vor der Brust verschränken und den Kopf auf '
+                        'die Brust legen.'
+                    )
+                },
+                {
+                    'text': 'Unselbständig',
+                    'score': 3,  # Score 3 based on doc example
+                    'option_explanation': (
+                        'Die Person kann sich beim Positionswechsel nicht oder nur minimal '
+                        'beteiligen.'
+                    )
+                }
             ]
         },
         {
