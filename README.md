@@ -1,49 +1,61 @@
 # PGRechner 3.0
 
-PGRechner ("Pflegegrad Rechner") is a Flask application used to calculate care level scores. The project ships with a PostgreSQL database and an Nginx reverse proxy for local development.
+PGRechner ("Pflegegrad Rechner") is a Flask application for calculating care level scores. The repository contains a full Docker setup including PostgreSQL and an Nginx reverse proxy.
 
-## Prerequisites
+## Environment variables
 
-* [Docker](https://docs.docker.com/get-docker/)
-* [Docker Compose](https://docs.docker.com/compose/install/)
+Create a `.env` file in the project root and define the following variables so the app can connect to the database and secure sessions:
 
-## Installation
+```env
+SECRET_KEY=change-me
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=db
+DB_PORT=5432
+DB_NAME=pgrechner
+DATABASE_URL=postgresql://postgres:postgres@db:5432/pgrechner
+```
 
-1. Clone this repository.
-2. Create a `.env` file in the project root to override default environment variables. The most common settings are:
+`docker-compose` automatically loads values from this file.
 
-   ```env
-   SECRET_KEY=change-me
-   DB_USER=postgres
-   DB_PASSWORD=postgres
-   DB_HOST=db
-   DB_PORT=5432
-   DB_NAME=pgrechner
-   DATABASE_URL=postgresql://postgres:postgres@db:5432/pgrechner
-   ```
+## Running with Docker Compose
 
-   `docker-compose` automatically loads variables from this file.
-3. Build and start the stack:
+Install Docker and Docker Compose, then build and start the containers:
 
-   ```bash
-   docker-compose up --build
-   ```
+```bash
+docker-compose up --build
+```
 
-This brings up three services: `app` (the Flask app), `db` (PostgreSQL) and `nginx` which proxies port `80` on the host to the Flask app running on port `5000`.
+This starts three services:
 
-## Usage
+- **app** – the Flask application listening on port `5000`.
+- **db** – a PostgreSQL database.
+- **nginx** – a reverse proxy exposing the app on port `80`.
 
-Once the containers are running, open [http://localhost](http://localhost) in your browser. The Flask application listens on port 5000 internally and is exposed via Nginx on port 80.
+Open [http://localhost](http://localhost) once the services are running.
 
-Two demo users are available for testing:
+## Running with Docker
 
-* `user` / `userpass`
-* `admin` / `adminpass`
+You can also run the Flask container directly without Compose:
 
-The admin account grants access to additional routes such as `/admin`.
+```bash
+docker build -t pgrechner .
+docker run --env-file .env -p 5000:5000 pgrechner
+```
 
-## Development tips
+This approach requires an accessible PostgreSQL instance and optional Nginx setup.
 
-* Any environment variables defined in `.env` will override the defaults found in `docker-compose.yml` and `Dockerfile`.
-* Changes to Python files require rebuilding the `app` service or running it directly with `flask` for quick feedback.
-* Database files are stored in the `db-data` named volume and persist between container restarts.
+## Demo credentials
+
+Two demo accounts are available:
+
+- `user` / `userpass`
+- `admin` / `adminpass`
+
+The admin account grants access to routes such as `/admin`.
+
+## Development notes
+
+- Variables in `.env` override defaults defined in `docker-compose.yml` and `Dockerfile`.
+- Rebuild or restart the `app` service after modifying Python code for changes to take effect.
+- Database files persist in the named `db-data` volume between container restarts.

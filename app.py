@@ -23,6 +23,7 @@ app = Flask(__name__)
 app.config.from_object(Config)
 db = SQLAlchemy(app)
 
+
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
@@ -318,6 +319,8 @@ def calculate_module5_raw_score(answers):
 @app.route('/logout')
 @login_required
 def logout():
+    """Log the user out and clear the session."""
+    logout_user()
     session.clear()
     flash('Abgemeldet.', 'info')
     return redirect(url_for('login'))
@@ -360,12 +363,6 @@ def login():
         flash('Invalid username or password.', 'error')
     return render_template('login.html')
 
-
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('login'))
 
 
 @app.route('/')
