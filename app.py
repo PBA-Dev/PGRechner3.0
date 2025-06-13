@@ -317,6 +317,14 @@ def calculate_module5_raw_score(answers):
 
 # --- Routes ---
 
+@app.route('/logout')
+@login_required
+def logout():
+    session.clear()
+    flash('Abgemeldet.', 'info')
+    return redirect(url_for('login'))
+
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -393,6 +401,28 @@ def restart():
     """Clears the session and returns to the intro page."""
     session.clear()
     return redirect(url_for('intro'))
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    """Display user's previous calculations."""
+    username = session.get('username')
+    all_entries = load_calculations()
+    user_entries = [e for e in all_entries if e.get('user') == username]
+    user_entries.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+    return render_template('dashboard.html', entries=user_entries)
+
+
+@app.route('/admin')
+@login_required
+@admin_required
+def admin_dashboard():
+    """Admin area showing all calculations."""
+    entries = load_calculations()
+    entries.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+    return render_template('admin_dashboard.html', entries=entries)
+
+
 
 
 
@@ -748,6 +778,17 @@ def calculate():
     }
 
     session['results'] = results # Keep storing in session if needed elsewhere
+
+        # Persist results if user is logged in
+    if 'username' in session:
+        entry = {
+            'user': session['username'],
+            'timestamp': date.today().isoformat(),
+            'final_total_score': results['final_total_score'],
+            'pflegegrad': results['pflegegrad']
+        }
+        save_calculation(entry)
+
 
     # Pass necessary variables to the template
     return render_template(
