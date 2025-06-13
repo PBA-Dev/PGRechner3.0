@@ -4,8 +4,7 @@ WORKDIR /app
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV SECRET_KEY=change-me
-ENV DATABASE_URL=postgresql://postgres:postgres@db:5432/pgrechner
+
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
