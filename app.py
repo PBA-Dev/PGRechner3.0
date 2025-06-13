@@ -12,9 +12,37 @@ from modules.module5 import module5
 from modules.module6 import module6
 from config.pflegegrad_config import pflegegrad_thresholds
 from config.benefits_data import pflegegrad_benefits
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import (
+    LoginManager, UserMixin, login_user,
+    logout_user, login_required, current_user)
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+login_manager = LoginManager(app)
+login_manager.login_view = 'login'
+
+# Simple file based storage for calculation history
+DATA_FILE = os.path.join('data', 'calculations.json')
+
+# Demo user database with roles
+users = {
+    'user': {
+        'password': generate_password_hash('userpass'),
+        'role': 'user'
+    },
+    'admin': {
+        'password': generate_password_hash('adminpass'),
+        'role': 'admin'
+    }
+}
+
 
 all_modules = {
     1: module1,
@@ -25,6 +53,67 @@ all_modules = {
     6: module6,
 }
 TOTAL_MODULES = len(all_modules)
+
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), default='user')
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+def load_calculations():
+    """Load calculation history from JSON file."""
+    if not os.path.exists(DATA_FILE):
+        return []
+    try:
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return []
+
+
+def save_calculation(entry):
+    """Append a calculation entry to the JSON file."""
+    data = load_calculations()
+    data.append(entry)
+    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+
+def login_required(func):
+    """Decorator ensuring a user is logged in."""
+    from functools import wraps
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if 'username' not in session:
+            flash('Bitte zuerst einloggen.', 'warning')
+            return redirect(url_for('login'))
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+def admin_required(func):
+    """Decorator ensuring user has admin role."""
+    from functools import wraps
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if session.get('role') != 'admin':
+            flash('Zugriff verweigert.', 'danger')
+            return redirect(url_for('dashboard'))
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
 
 weighted_score_mapping_tables = {
     # Module 1: Mobilität
@@ -227,6 +316,51 @@ def calculate_module5_raw_score(answers):
 
 
 # --- Routes ---
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        role = request.form.get('role', 'user')
+        if not username or not password:
+            flash('Username and password required.', 'error')
+            return redirect(url_for('register'))
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists.', 'error')
+            return redirect(url_for('register'))
+        user = User(
+            username=username,
+            password_hash=generate_password_hash(password),
+            role=role
+        )
+        db.session.add(user)
+        db.session.commit()
+        flash('Registration successful. Please log in.', 'success')
+        return redirect(url_for('login'))
+    return render_template('register.html')
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '')
+        user = User.query.filter_by(username=username).first()
+        if user and check_password_hash(user.password_hash, password):
+            login_user(user)
+            flash('Logged in successfully.', 'success')
+            return redirect(url_for('intro'))
+        flash('Invalid username or password.', 'error')
+    return render_template('login.html')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+
 
 @app.route('/')
 def intro():
@@ -914,4 +1048,6 @@ def generate_pdf():
 # ... (rest of app.py, including if __name__ == '__main__':) ...
 
 if __name__ == '__main__':
+    with app.app_context():
+        db.create_all()
     app.run(debug=True, port=5001)
