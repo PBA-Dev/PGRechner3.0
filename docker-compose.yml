@@ -10,6 +10,7 @@ services:
       - db
     environment:
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/pgrechner
+      - SECRET_KEY=change-me
 
   db:
     image: postgres:15-alpine

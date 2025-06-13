@@ -17,12 +17,10 @@ from flask_login import (
     LoginManager, UserMixin, login_user,
     logout_user, login_required, current_user)
 from werkzeug.security import generate_password_hash, check_password_hash
+from config.config import Config
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
-
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config.from_object(Config)
 db = SQLAlchemy(app)
 
 login_manager = LoginManager(app)
