@@ -58,4 +58,5 @@ The admin account grants access to routes such as `/admin`.
 
 - Variables in `.env` override defaults defined in `docker-compose.yml` and `Dockerfile`.
 - Rebuild or restart the `app` service after modifying Python code for changes to take effect.
+- Dependencies such as `gunicorn` and `psycopg2-binary` are installed from `requirements.txt`.
 - Database files persist in the named `db-data` volume between container restarts.
