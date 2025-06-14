@@ -67,4 +67,3 @@ The admin account grants access to routes such as `/admin`.
 
 The application stores calculation history in `data/calculations.json`. The file contains a JSON array of past results and is created automatically if missing. An empty array is provided in the repository so new installations start with a valid file.
 
-## EOF

@@ -40,6 +40,6 @@ volumes:
 
 networks:
   default:
-n8n_default:
-    external: true
+  n8n_default:
+      external: true
 # This file is used to define the services, networks, and volumes for the Docker application.
