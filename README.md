@@ -67,3 +67,56 @@ The admin account grants access to routes such as `/admin`.
 
 The application stores calculation history in `data/calculations.json`. The file contains a JSON array of past results and is created automatically if missing. An empty array is provided in the repository so new installations start with a valid file.
 
+## VPS-level Docker Compose
+
+When deploying alongside an existing `nginx-proxy`, add the following services to
+the VPS `docker-compose.yml`. Each service joins the `proxy_network` so requests
+for `opbrechner.optimum-pflegeberatung.de` are routed correctly.
+
+```yaml
+services:
+  pgrechner_app:
+    build: ./PGRechner3.0
+    container_name: pgrechner_app
+    env_file: ./PGRechner3.0/.env
+    depends_on:
+      - pgrechner_db
+    networks:
+      - proxy_network
+
+  pgrechner_db:
+    image: postgres:15-alpine
+    container_name: pgrechner_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pgrechner
+    volumes:
+      - pgrechner_db_data:/var/lib/postgresql/data
+    networks:
+      - proxy_network
+
+  pgrechner_nginx:
+    image: nginx:alpine
+    container_name: pgrechner_nginx
+    environment:
+      - VIRTUAL_HOST=opbrechner.optimum-pflegeberatung.de
+      - LETSENCRYPT_HOST=opbrechner.optimum-pflegeberatung.de
+      - LETSENCRYPT_EMAIL=alex.torrescanety@optimum-pflegeberatung.de
+    volumes:
+      - ./PGRechner3.0/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - pgrechner_app
+    networks:
+      - proxy_network
+
+volumes:
+  pgrechner_db_data:
+
+networks:
+  proxy_network:
+    external: true
+```
+
+This configuration mirrors the Compose setup in the repository while ensuring a
+persistent database volume and loading `nginx.conf` from this project.
