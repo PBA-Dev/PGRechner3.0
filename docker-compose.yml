@@ -23,13 +23,22 @@ services:
   nginx:
     image: nginx:alpine
     container_name: pgrechner_nginx
-    ports:
-      - "8081:80"
+    environment:
+      - VIRTUAL_HOST=opbrechner.optimum-pflegeberatung.de
+      - LETSENCRYPT_HOST=opbrechner.optimum-pflegeberatung.de
+      - LETSENCRYPT_EMAIL=alex.torrescanety@optimum-pflegeberatung.de
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - default
+      - n8n_default
     depends_on:
       - app
 
 volumes:
   db-data:
-  
+
+  networks:
+    default:
+    n8n_default:
+      external: true
