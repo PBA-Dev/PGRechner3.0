@@ -85,27 +85,14 @@ def save_calculation(entry):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def login_required(func):
-    """Decorator ensuring a user is logged in."""
-    from functools import wraps
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if 'username' not in session:
-            flash('Bitte zuerst einloggen.', 'warning')
-            return redirect(url_for('login'))
-        return func(*args, **kwargs)
-
-    return wrapper
-
 
 def admin_required(func):
-    """Decorator ensuring user has admin role."""
+    """Decorator ensuring the current user has admin role."""
     from functools import wraps
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-        if session.get('role') != 'admin':
+        if not current_user.is_authenticated or current_user.role != 'admin':
             flash('Zugriff verweigert.', 'danger')
             return redirect(url_for('dashboard'))
         return func(*args, **kwargs)
@@ -401,7 +388,7 @@ def restart():
 @login_required
 def dashboard():
     """Display user's previous calculations."""
-    username = session.get('username')
+    username = current_user.username
     all_entries = load_calculations()
     user_entries = [e for e in all_entries if e.get('user') == username]
     user_entries.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
@@ -772,12 +759,12 @@ def calculate():
         'benefits': benefits             # Pass benefits data
     }
 
-    session['results'] = results # Keep storing in session if needed elsewhere
+    session['results'] = results  # Keep storing in session if needed elsewhere
 
-        # Persist results if user is logged in
-    if 'username' in session:
+    # Persist results if user is logged in
+    if current_user.is_authenticated:
         entry = {
-            'user': session['username'],
+            'user': current_user.username,
             'timestamp': date.today().isoformat(),
             'final_total_score': results['final_total_score'],
             'pflegegrad': results['pflegegrad']
@@ -1087,3 +1074,4 @@ if __name__ == '__main__':
     with app.app_context():
         db.create_all()
     app.run(debug=True, port=5001)
+    

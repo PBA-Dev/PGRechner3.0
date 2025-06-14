@@ -15,3 +15,4 @@ class Config:
         f"postgresql://{DB_USER or 'postgres'}:{DB_PASSWORD or 'postgres'}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
