@@ -32,9 +32,9 @@ This starts three services:
 - **db** – a PostgreSQL database.
 - **nginx** – a reverse proxy exposing the app on port `8081`.
 
-The Compose file maps container port `80` to host port `8081`, so access the application at [http://localhost:8081](http://localhost:8081).
+The Compose file maps container port `80` to host port `8081`, so access the application at [opbrechner.optimum-pflegeberatung.de](opbrechner.optimum-pflegeberatung.de).
 
-Open [http://localhost:8081](http://localhost:8081) once the services are running.
+Open [opbrechner.optimum-pflegeberatung.de](opbrechner.optimum-pflegeberatung.de) once the services are running.
 
 ## Running with Docker
 
