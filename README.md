@@ -30,11 +30,10 @@ This starts three services:
 
 - **app** – the Flask application listening on port `5000`.
 - **db** – a PostgreSQL database.
-- **nginx** – a reverse proxy exposing the app on port `8081`.
+- **nginx** – a reverse proxy for the Flask app.
+The Compose file relies on an external Nginx proxy for domain routing. When the proxy is configured, visit [http://opbrechner.optimum-pflegeberatung.de](http://opbrechner.optimum-pflegeberatung.de) to reach the application.
 
-The Compose file maps container port `80` to host port `8081`, so access the application at [opbrechner.optimum-pflegeberatung.de](opbrechner.optimum-pflegeberatung.de).
-
-Open [opbrechner.optimum-pflegeberatung.de](opbrechner.optimum-pflegeberatung.de) once the services are running.
+Open [http://opbrechner.optimum-pflegeberatung.de](opbrechner.optimum-pflegeberatung.de) once the services are running.
 
 ## Running with Docker
 
@@ -67,3 +66,5 @@ The admin account grants access to routes such as `/admin`.
 ## Data files
 
 The application stores calculation history in `data/calculations.json`. The file contains a JSON array of past results and is created automatically if missing. An empty array is provided in the repository so new installations start with a valid file.
+
+## EOF

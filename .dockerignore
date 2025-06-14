@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+*.zip
+.venv/
+.env
+.git
+dejavu-sans.zip
+Module1-6- images
+# Ignore Python cache files
