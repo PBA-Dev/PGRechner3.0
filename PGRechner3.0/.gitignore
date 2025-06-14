@@ -3,3 +3,5 @@ __pycache__/
 .venv/
 .env
 /Module1-6- images
+/dejavu-sans.zip
+# Ignore Python cache files
