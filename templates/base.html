@@ -11,16 +11,15 @@
 </head>
 <body>
     <nav>
-        <a href="{{ url_for('intro') }}">Start</a> |
-        {% if session.get('username') %}
+        <a href="{{ url_for('landing') }}">Start</a>
         {% if current_user.is_authenticated %}
-            <a href="{{ url_for('dashboard') }}">Dashboard</a>
+            | <a href="{{ url_for('dashboard') }}">Dashboard</a>
             {% if current_user.role == 'admin' %}
                 | <a href="{{ url_for('admin_dashboard') }}">Admin</a>
             {% endif %}
             | <a href="{{ url_for('logout') }}">Logout ({{ current_user.username }})</a>
         {% else %}
-            <a href="{{ url_for('login') }}">Login</a>
+            | <a href="{{ url_for('login') }}">Login</a>
         {% endif %}
     </nav>
     <div class="container">

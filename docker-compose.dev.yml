@@ -1,0 +1,32 @@
+# docker-compose.dev.yml for local development of pgrechner_app
+version: '3.8' # You can keep this version for local if you like, or remove it based on your preference
+services:
+  pgrechner_app:
+    build: . # Or the path to your Dockerfile for pgrechner_app
+    ports:
+      - "5000:5000" # Expose the app's port directly to your host machine
+    volumes:
+      - .:/app # Mount your local code into the container for live changes
+      # If your app needs a specific volume for data, add it here, e.g.:
+      # - pgrechner_app_data:/app/data
+    environment:
+      # Your application's environment variables (e.g., database connection string, debug flags)
+      # These are internal to the container; no need for VIRTUAL_HOST/PORT for direct access
+      - DATABASE_URL=postgresql://user:password@pgrechner_db_dev:5432/db_name
+      - DEBUG=True # Example debug flag
+    depends_on:
+      - pgrechner_db_dev # Ensure the database starts first
+
+  pgrechner_db_dev: # Renamed to avoid conflicts if you run prod setup elsewhere
+    image: postgres:15-alpine # Or whatever PostgreSQL version you use
+    volumes:
+      - pgrechner_db_data_dev:/var/lib/postgresql/data # Persistent data for your local dev DB
+    environment:
+      - POSTGRES_DB=db_name
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+    # No ports mapping needed if only pgrechner_app connects to it
+
+volumes:
+  pgrechner_db_data_dev:
+  # pgrechner_app_data: # Uncomment if you added an app data volume

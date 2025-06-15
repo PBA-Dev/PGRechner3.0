@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}Willkommen{% endblock %}
+{% block content %}
+<div class="text-center mt-5">
+    <h1>Willkommen beim Optimum Pflegeberatung</h1>
+    <p class="mb-4">Nutzen Sie den Rechner, um eine Pflegegrad-Einschätzung vorzunehmen.</p>
+    <a class="btn btn-primary me-2" href="{{ url_for('intro') }}">Als Gast starten</a>
+    <a class="btn btn-secondary me-2" href="{{ url_for('login') }}">Login</a>
+    <a class="btn btn-secondary" href="{{ url_for('register') }}">Registrieren</a>
+</div>
+{% endblock %}
