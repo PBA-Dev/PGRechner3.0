@@ -120,3 +120,12 @@ networks:
 
 This configuration mirrors the Compose setup in the repository while ensuring a
 persistent database volume and loading `nginx.conf` from this project.
+
+
+## Running tests
+
+Unit tests are provided for the core calculator logic. Install dependencies and run the test suite with:
+
+```bash
+pytest
+```
