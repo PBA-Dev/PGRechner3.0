@@ -21,7 +21,17 @@ from config.config import Config
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Add this line to suppress the FSADeprecationWarning
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+
+@app.before_first_request
+def initialize_database():
+    """Create all database tables before handling the first request."""
+    db.create_all()
+
+
 
 
 login_manager = LoginManager(app)
@@ -54,17 +64,6 @@ all_modules = {
 TOTAL_MODULES = len(all_modules)
 
 
-class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), default='user')
-
-
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
 def load_calculations():
     """Load calculation history from JSON file."""
     if not os.path.exists(DATA_FILE):
@@ -83,21 +82,6 @@ def save_calculation(entry):
     os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-
-
-
-def admin_required(func):
-    """Decorator ensuring the current user has admin role."""
-    from functools import wraps
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'admin':
-            flash('Zugriff verweigert.', 'danger')
-            return redirect(url_for('dashboard'))
-        return func(*args, **kwargs)
-
-    return wrapper
 
 
 
@@ -300,8 +284,75 @@ def calculate_module5_raw_score(answers):
     return part1_score + part2_score + part3_score + part4_score
 
 
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(200), nullable=False)
+    role = db.Column(db.String(20), default='user')
+
+    def __repr__(self):
+        return '<User %r>' % self.username
+
+    def get_id(self):
+        return str(self.id)
+
+    @property
+    def is_active(self):
+        return True # Assuming all users are active
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+    
+    
+
+def admin_required(func):
+    """Decorator ensuring the current user has admin role."""
+    from functools import wraps
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if not current_user.is_authenticated or current_user.role != 'admin':
+            flash('Zugriff verweigert.', 'danger')
+            return redirect(url_for('dashboard'))
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+@login_manager.user_loader
+def load_user(user_id):
+     return db.session.get(User, int(user_id))
+
+
+# --- Database Table Creation for Gunicorn ---
+# This block runs when the module is imported by Gunicorn.
+# It ensures tables are created/updated when the application starts.
+# It should only run once per application instance.
+try:
+    with app.app_context():
+        db.create_all() # Create tables if they don't exist
+        print("Database tables created/checked successfully.")
+except Exception as e:
+    print(f"Error creating database tables on startup: {e}")
+    # Depending on the error, you might want to exit or log more verbosely.
+    # For a production environment, you'd typically use Alembic for migrations.
+
 
 # --- Routes ---
+
+@app.route('/landing') # This endpoint is now explicitly defined
+def landing():
+    return render_template('landing.html')
+
+@app.route('/')
+def intro():
+    return render_template('intro.html')
 
 @app.route('/logout')
 @login_required
@@ -1066,11 +1117,23 @@ def generate_pdf():
     except Exception as e:
         current_app.logger.error(f"Error generating PDF: {e}", exc_info=True)
         return jsonify({"error": f"An internal server error occurred during PDF generation: {e}"}), 500
+    
+@app.errorhandler(404)
+def handle_404(error):
+        """Return a friendly 404 page and log the missing path."""
+        current_app.logger.warning(f"404 Not Found: {request.path}")
+        return render_template('404.html'), 404
+
+
+@app.errorhandler(500)
+def handle_500(error):
+        """Return a generic 500 page while logging the exception."""
+        current_app.logger.error(f"500 Internal Server Error: {error}", exc_info=True)
+        return render_template('500.html'), 500
+
 
 # ... (rest of app.py, including if __name__ == '__main__':) ...
 # ... (rest of app.py, including if __name__ == '__main__':) ...
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True, port=5000)
