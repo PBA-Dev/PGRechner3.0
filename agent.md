@@ -20,14 +20,12 @@ Support deployment by guiding Docker builds, Docker Compose usage, and Nginx con
 ├── static/           # CSS, JS, images
 ├── templates/        # Jinja2 HTML templates
 ├── .gitignore        # Git exclusions
-├── agent.md          # This agent configuration file
+├── agent.md          # This agent configuration file 
 ├── Dockerfile        # Container build instructions
-├── docker-compose.yml# Multi-container orchestration
 ├── nginx.conf        # Reverse proxy config
 ├── requirements.txt  # Python dependencies
 ├── README.md         # Project overview & usage
 ├── app.py            # Flask application entrypoint
-└── NBA-Punkts.rtf    # Legacy document (unused)
 
 The agent should familiarize itself with these directories and files before suggesting changes.
 
@@ -38,10 +36,10 @@ All sensitive and environment-specific settings must be defined in a .env file a
 SECRET_KEY=change-me
 DB_USER=postgres
 DB_PASSWORD=postgres
-DB_HOST=db
+DB_HOST=pgrechner_db
 DB_PORT=5432
 DB_NAME=pgrechner
-DATABASE_URL=postgresql://postgres:postgres@db:5432/pgrechner
+DATABASE_URL=postgresql://postgres:postgres@pgrechner_db:5432/pgrechner
 
 Do not hard-code secrets or credentials in code.
 

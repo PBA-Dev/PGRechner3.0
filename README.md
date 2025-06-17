@@ -4,33 +4,34 @@ PGRechner ("Pflegegrad Rechner") is a Flask application for calculating care lev
 
 ## Environment variables
 
-Create a `.env` file in the project root and define the following variables so the app can connect to the database and secure sessions:
+Copy `.env.example` to `.env` and adjust if needed. The application uses these variables to connect to the database and secure sessions:
 
 ```env
 SECRET_KEY=change-me
 DB_USER=postgres
 DB_PASSWORD=postgres
-DB_HOST=db
+DB_HOST=pgrechner_db
 DB_PORT=5432
 DB_NAME=pgrechner
-DATABASE_URL=postgresql://postgres:postgres@db:5432/pgrechner
+DATABASE_URL=postgresql://postgres:postgres@pgrechner_db:5432/pgrechner
 ```
 
 `docker-compose` automatically loads values from this file.
 
 ## Running with Docker Compose
 
-Install Docker and Docker Compose, then build and start the containers:
+Install Docker and Docker Compose, then build and start the containers using the external main vps
+`docker-compose.yml` :
 
 ```bash
-docker-compose up --build
+docker-compose up --build /root/n8n/docker-compose.yml
 ```
 
 This starts three services:
 
-- **app** – the Flask application listening on port `5000`.
-- **db** – a PostgreSQL database.
-- **nginx** – a reverse proxy for the Flask app.
+- **pgrechner_app** – the Flask application listening on port `5000`.
+- **pgrechner_db** – a PostgreSQL database.
+- **pgrechner_nginx** – a reverse proxy for the Flask app.
 The Compose file relies on an external Nginx proxy for domain routing. When the proxy is configured, visit [http://opbrechner.optimum-pflegeberatung.de](http://opbrechner.optimum-pflegeberatung.de) to reach the application.
 
 Open [http://opbrechner.optimum-pflegeberatung.de](opbrechner.optimum-pflegeberatung.de) once the services are running.
@@ -58,9 +59,9 @@ The admin account grants access to routes such as `/admin`.
 ## Development notes
 
 - Variables in `.env` override defaults defined in `docker-compose.yml` and `Dockerfile`.
-- Rebuild or restart the `app` service after modifying Python code for changes to take effect.
+- Rebuild or restart the `pgrechner_app` service after modifying Python code for changes to take effect.
 - Dependencies such as `gunicorn` and `psycopg2-binary` are installed from `requirements.txt`.
-- Database files persist in the named `db-data` volume between container restarts.
+- Database files persist in the named `pgrechner_db_data` volume between container restarts.
 - The production VPS is reachable at `194.5.159.108` . Open [http://opbrechner.optimum-pflegeberatung.de](http://opbrechner.optimum-pflegeberatung.de) to access the application.
 
 ## Data files
