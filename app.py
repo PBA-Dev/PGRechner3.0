@@ -43,19 +43,8 @@ app = Flask(__name__)
 app.config.from_object(Config)
 
 # Add this line to suppress the FSADeprecationWarning
-<<<<<<< HEAD
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-=======
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
 db = SQLAlchemy(app)
-
-@app.before_first_request
-def initialize_database():
-    """Create all database tables before handling the first request."""
-    db.create_all()
-
-
 
 
 @app.before_first_request
@@ -108,10 +97,6 @@ def save_calculation(entry):
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-<<<<<<< HEAD
-=======
-
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
 weighted_score_mapping_tables = {
     # Module 1: Mobilität
     1: [
@@ -335,28 +320,17 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-<<<<<<< HEAD
     role = db.Column(db.String(20), default="user")
 
     def __repr__(self):
         return "<User %r>" % self.username
-=======
-    role = db.Column(db.String(20), default='user')
-
-    def __repr__(self):
-        return '<User %r>' % self.username
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
 
     def get_id(self):
         return str(self.id)
 
     @property
     def is_active(self):
-<<<<<<< HEAD
         return True  # Assuming all users are active
-=======
-        return True # Assuming all users are active
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
 
     @property
     def is_authenticated(self):
@@ -365,12 +339,7 @@ class User(UserMixin, db.Model):
     @property
     def is_anonymous(self):
         return False
-<<<<<<< HEAD
 
-=======
-    
-    
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
 
 def admin_required(func):
     """Decorator ensuring the current user has admin role."""
@@ -378,15 +347,9 @@ def admin_required(func):
 
     @wraps(func)
     def wrapper(*args, **kwargs):
-<<<<<<< HEAD
         if not current_user.is_authenticated or current_user.role != "admin":
             flash("Zugriff verweigert.", "danger")
             return redirect(url_for("dashboard"))
-=======
-        if not current_user.is_authenticated or current_user.role != 'admin':
-            flash('Zugriff verweigert.', 'danger')
-            return redirect(url_for('dashboard'))
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
         return func(*args, **kwargs)
 
     return wrapper
@@ -394,11 +357,7 @@ def admin_required(func):
 
 @login_manager.user_loader
 def load_user(user_id):
-<<<<<<< HEAD
     return db.session.get(User, int(user_id))
-=======
-     return db.session.get(User, int(user_id))
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
 
 
 # --- Database Table Creation for Gunicorn ---
@@ -407,11 +366,7 @@ def load_user(user_id):
 # It should only run once per application instance.
 try:
     with app.app_context():
-<<<<<<< HEAD
         db.create_all()  # Create tables if they don't exist
-=======
-        db.create_all() # Create tables if they don't exist
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
         print("Database tables created/checked successfully.")
 except Exception as e:
     print(f"Error creating database tables on startup: {e}")
@@ -421,30 +376,13 @@ except Exception as e:
 
 # --- Routes ---
 
-<<<<<<< HEAD
 
 @app.route("/landing")  # This endpoint is now explicitly defined
 def landing():
     return render_template("landing.html")
 
 
-@app.route("/")
-def intro():
-    return render_template("intro.html")
-
-
 @app.route("/logout")
-=======
-@app.route('/landing') # This endpoint is now explicitly defined
-def landing():
-    return render_template('landing.html')
-
-@app.route('/')
-def intro():
-    return render_template('intro.html')
-
-@app.route('/logout')
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
 @login_required
 def logout():
     """Log the user out and clear the session."""
@@ -1484,7 +1422,6 @@ def generate_pdf():
 
     except Exception as e:
         current_app.logger.error(f"Error generating PDF: {e}", exc_info=True)
-<<<<<<< HEAD
         return (
             jsonify(
                 {
@@ -1500,38 +1437,18 @@ def handle_404(error):
     """Return a friendly 404 page and log the missing path."""
     current_app.logger.warning(f"404 Not Found: {request.path}")
     return render_template("404.html"), 404
-=======
-        return jsonify({"error": f"An internal server error occurred during PDF generation: {e}"}), 500
-    
-@app.errorhandler(404)
-def handle_404(error):
-        """Return a friendly 404 page and log the missing path."""
-        current_app.logger.warning(f"404 Not Found: {request.path}")
-        return render_template('404.html'), 404
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
 
 
 @app.errorhandler(500)
 def handle_500(error):
-<<<<<<< HEAD
     """Return a generic 500 page while logging the exception."""
     current_app.logger.error(f"500 Internal Server Error: {error}", exc_info=True)
     return render_template("500.html"), 500
-=======
-        """Return a generic 500 page while logging the exception."""
-        current_app.logger.error(f"500 Internal Server Error: {error}", exc_info=True)
-        return render_template('500.html'), 500
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
 
 
 # ... (rest of app.py, including if __name__ == '__main__':) ...
 # ... (rest of app.py, including if __name__ == '__main__':) ...
 
-<<<<<<< HEAD
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
     
-=======
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
->>>>>>> bbdac6513421500729dc0887c94d46b4b07f9618
