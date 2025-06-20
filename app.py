@@ -1,6 +1,3 @@
-+747
--431
-
 import os
 import json
 import logging
@@ -37,33 +34,41 @@ from flask_login import (
     current_user,
 )
 from werkzeug.security import generate_password_hash, check_password_hash
-from config.config import Config
+from flask_mail import Mail, Message
+from dotenv import load_dotenv
+
 
 app = Flask(__name__)
-app.config.from_object(Config)
 
-# Add this line to suppress the FSADeprecationWarning
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+# Load environment variables from .env file
+load_dotenv()
+
+# Set secret key and database URI from environment variables
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Configure Flask-Mail from environment variables
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() in ['true', '1', 't']
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+
 db = SQLAlchemy(app)
 
 
-@app.before_first_request
-def initialize_database():
-    """Create all database tables before handling the first request."""
-    db.create_all()
+load_dotenv(dotenv_path=".env")
+
+
+mail = Mail(app)
+
 
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
-
-# Simple file based storage for calculation history
-DATA_FILE = os.path.join("data", "calculations.json")
-
-# Demo user database with roles
-users = {
-    "user": {"password": generate_password_hash("userpass"), "role": "user"},
-    "admin": {"password": generate_password_hash("adminpass"), "role": "admin"},
-}
+DATA_FILE = os.path.join(os.path.dirname(__file__), "data", "calculations.json")
 
 
 all_modules = {
@@ -315,15 +320,55 @@ def calculate_module5_raw_score(answers):
     return part1_score + part2_score + part3_score + part4_score
 
 
-class User(UserMixin, db.Model):
+from flask_mail import Mail, Message
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, BooleanField, SubmitField
+from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
+
+app.config.update(
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USERNAME=os.getenv('MAIL_USERNAME'),
+    MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),
+    MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
+)
+
+
+mail = Mail(app)
+from flask_mail import Mail, Message
+
+mail = Mail(app)
+from itsdangerous import URLSafeTimedSerializer as Serializer
+
+class User(db.Model, UserMixin):
+    __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(200), nullable=False)
-    role = db.Column(db.String(20), default="user")
+    password_hash = db.Column(db.String(256), nullable=False)
+    name = db.Column(db.String(120), nullable=False)
+    vorname = db.Column(db.String(120), nullable=False)
+    phone_number = db.Column(db.String(20), nullable=True)
+    company = db.Column(db.String(120), nullable=True)
+    gdpr_consent = db.Column(db.Boolean, nullable=False, default=False)
+    role = db.Column(db.String(20), nullable=False, default="user")  # 'user' or 'admin'
+
+    def get_reset_token(self, expires_sec=1800):
+        s = Serializer(app.config['SECRET_KEY'])
+        return s.dumps({'user_id': self.id})
+
+    @staticmethod
+    def verify_reset_token(token, expires_sec=1800):
+        s = Serializer(app.config['SECRET_KEY'])
+        try:
+            user_id = s.loads(token, max_age=expires_sec)['user_id']
+        except Exception:
+            return None
+        return User.query.get(user_id)
 
     def __repr__(self):
-        return "<User %r>" % self.username
+        return f"<User {self.username}>"
 
     def get_id(self):
         return str(self.id)
@@ -392,51 +437,202 @@ def logout():
     return redirect(url_for("login"))
 
 
+class RegistrationForm(FlaskForm):
+    username = StringField("Username", validators=[DataRequired()])
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    password = PasswordField("Password", validators=[DataRequired()])
+    name = StringField("Name", validators=[DataRequired()])
+    vorname = StringField("Vorname", validators=[DataRequired()])
+    phone_number = StringField("Phone Number")
+    company = StringField("Company")
+    gdpr_consent = BooleanField("GDPR Consent", validators=[DataRequired()])
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
-        role = request.form.get("role", "user")
-        if not username or not password:
-            flash("Username and password required.", "error")
-            return redirect(url_for("register"))
-        if User.query.filter_by(username=username).first():
-            flash("Username already exists.", "error")
-            return redirect(url_for("register"))
-        user = User(
-            username=username, password_hash=generate_password_hash(password), role=role
+    form = RegistrationForm()
+    if form.validate_on_submit():
+        existing_user = User.query.filter_by(username=form.username.data).first()
+        if existing_user:
+            flash("Benutzername ist bereits vergeben.", "danger")
+            return render_template("register.html", form=form)
+
+        existing_email = User.query.filter_by(email=form.email.data).first()
+        if existing_email:
+            flash("E-Mail ist bereits registriert.", "danger")
+            return render_template("register.html", form=form)
+
+        hashed_password = generate_password_hash(form.password.data)
+        new_user = User(
+            username=form.username.data,
+            email=form.email.data,
+            password_hash=hashed_password,
+            name=form.name.data,
+            vorname=form.vorname.data,
+            phone_number=form.phone_number.data,
+            company=form.company.data,
+            gdpr_consent=form.gdpr_consent.data,
+            role="user",
         )
-        db.session.add(user)
+        db.session.add(new_user)
         db.session.commit()
-        flash("Registration successful. Please log in.", "success")
+
+        # --- E-Mail-Versand vorübergehend deaktiviert ---
+        # Der folgende Codeblock ist für den Versand von Bestätigungs-E-Mails zuständig.
+        # Er wurde auskommentiert, da er in der aktuellen Docker-Umgebung zu Timeout-Fehlern führt,
+        # die den Registrierungsprozess blockieren.
+        #
+        # Für die Produktionsumgebung sollte dieser Block wieder aktiviert und die
+        # E-Mail-Server-Konfiguration (`.env`-Datei) sorgfältig überprüft werden,
+        # um eine reibungslose Verbindung zum SMTP-Server zu gewährleisten.
+        #
+        # try:
+        #     msg = Message(
+        #         "Registrierung erfolgreich",
+        #         sender=app.config["MAIL_DEFAULT_SENDER"],
+        #         recipients=[new_user.email],
+        #     )
+        #     msg.body = f"Hallo {new_user.username}, Ihre Registrierung war erfolgreich."
+        #     mail.send(msg)
+        #     flash("Registrierung erfolgreich! Bitte überprüfen Sie Ihre E-Mails.", "success")
+        # except Exception as e:
+        #     app.logger.error(f"Error sending email: {e}")
+        #     flash(
+        #         "Registrierung erfolgreich, aber die Bestätigungs-E-Mail konnte nicht gesendet werden.",
+        #         "warning",
+        #     )
+        # --- Ende des deaktivierten E-Mail-Blocks ---
+
+        flash("Registrierung erfolgreich! Sie können sich jetzt anmelden.", "success")
         return redirect(url_for("login"))
-    return render_template("register.html")
+
+    return render_template("register.html", form=form)
 
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
         user = User.query.filter_by(username=username).first()
+
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
-            flash("Logged in successfully.", "success")
-            return redirect(url_for("intro"))
-        flash("Invalid username or password.", "error")
-    return render_template("login.html")
+            flash("Anmeldung erfolgreich!", "success")
+            if user.role == "admin":
+                return redirect(url_for("admin"))
+            else:
+                return redirect(url_for("dashboard"))
+        else:
+            flash("Ungültiger Benutzername oder Passwort.", "danger")
+
+    return render_template('login.html')
+
+
+@app.route("/reset_password", methods=['GET', 'POST'])
+def reset_request():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    form = ResetPasswordRequestForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            send_reset_email(user)
+        flash('An email has been sent with instructions to reset your password.', 'info')
+        return redirect(url_for('login'))
+    return render_template('reset_request.html', title='Reset Password', form=form)
+
+
+@app.route("/reset_password/<token>", methods=['GET', 'POST'])
+def reset_token(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    user = User.verify_reset_token(token)
+    if user is None:
+        flash('That is an invalid or expired token', 'warning')
+        return redirect(url_for('reset_request'))
+    form = ResetPasswordForm()
+    if form.validate_on_submit():
+        hashed_password = generate_password_hash(form.password.data)
+        user.password_hash = hashed_password
+        db.session.commit()
+        flash('Your password has been updated! You are now able to log in', 'success')
+        return redirect(url_for('login'))
+    return render_template('reset_token.html', title='Reset Password', form=form)
 
 
 @app.route("/")
 def intro():
     """Displays the introduction page."""
-    # Clear any previous session data at the start
-    session.pop("answers", None)
-    session.pop("results", None)
-    # Clear all previous session data so old answers are not reused
+    # Clear any previous session data to start fresh
     session.clear()
     return render_template("intro.html")
+
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    """Display user's previous calculations."""
+    username = current_user.username
+    all_entries = load_calculations()
+    user_entries = [e for e in all_entries if e.get("user") == username]
+    user_entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    return render_template("dashboard.html", entries=user_entries)
+
+
+@app.route("/admin")
+@login_required
+@admin_required
+def admin():
+    all_users = User.query.all()
+    return render_template("admin.html", users=all_users)
+
+
+class ChangePasswordForm(FlaskForm):
+    current_password = PasswordField('Current Password', validators=[DataRequired()])
+    new_password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
+    confirm_new_password = PasswordField('Confirm New Password',
+                                         validators=[DataRequired(), EqualTo('new_password', message='Passwords must match.')])
+    submit = SubmitField('Change Password')
+
+class ResetPasswordRequestForm(FlaskForm):
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    submit = SubmitField('Request Password Reset')
+
+class ResetPasswordForm(FlaskForm):
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Confirm Password',
+                                     validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Reset Password')
+
+
+def send_reset_email(user):
+    token = user.get_reset_token()
+    msg = Message('Password Reset Request',
+                  sender=app.config['MAIL_USERNAME'],
+                  recipients=[user.email])
+    msg.body = f'''To reset your password, visit the following link:
+{url_for('reset_token', token=token, _external=True)}
+
+If you did not make this request then simply ignore this email and no changes will be made.
+'''
+    mail.send(msg)
+
+
+@app.route("/edit_profile", methods=["GET", "POST"])
+@login_required
+def edit_profile():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        if check_password_hash(current_user.password_hash, form.current_password.data):
+            hashed_password = generate_password_hash(form.new_password.data)
+            current_user.password_hash = hashed_password
+            db.session.commit()
+            flash("Your password has been updated successfully.", "success")
+            return redirect(url_for('dashboard'))
+        else:
+            flash("Incorrect current password. Please try again.", "danger")
+    return render_template("edit_profile.html", form=form)
 
 
 @app.route("/start", methods=["POST"])
@@ -461,27 +657,6 @@ def restart():
     """Clears the session and returns to the intro page."""
     session.clear()
     return redirect(url_for("intro"))
-
-
-@app.route("/dashboard")
-@login_required
-def dashboard():
-    """Display user's previous calculations."""
-    username = current_user.username
-    all_entries = load_calculations()
-    user_entries = [e for e in all_entries if e.get("user") == username]
-    user_entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-    return render_template("dashboard.html", entries=user_entries)
-
-
-@app.route("/admin")
-@login_required
-@admin_required
-def admin_dashboard():
-    """Admin area showing all calculations."""
-    entries = load_calculations()
-    entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-    return render_template("admin_dashboard.html", entries=entries)
 
 
 # --- Update module_page_submit function ---
@@ -871,18 +1046,8 @@ def calculate():
     }
 
     # --- Get Benefits Data ---
-    # (Keep existing logic - maybe add date check)
-    from datetime import date
-
-    today = date.today()
-    # Determine period based on date - adjust cutoff as needed
-    current_period_key = "period_2" if today >= date(today.year, 7, 1) else "period_1"
-    # Fallback if period key doesn't exist for some reason
+    # Fetch all benefit periods for the determined Pflegegrad
     benefits_for_pg = pflegegrad_benefits.get(pflegegrad, {})
-    benefits = benefits_for_pg.get(current_period_key)
-    if not benefits:  # If current period missing, try the other one
-        fallback_period = "period_1" if current_period_key == "period_2" else "period_2"
-        benefits = benefits_for_pg.get(fallback_period, {})
 
     # --- Prepare results for template ---
     # (Keep existing structure)
@@ -894,7 +1059,7 @@ def calculate():
         "which_module_contributed_m2_m3": which_module_contributed_m2_m3,
         "answers": all_detailed_answers,  # Pass detailed answers for display/PDF
         "notes": aggregated_notes,  # Pass aggregated notes
-        "benefits": benefits,  # Pass benefits data
+        "benefits": benefits_for_pg,  # Pass all benefits data for the pflegegrad
     }
 
     session["results"] = results  # Keep storing in session if needed elsewhere
@@ -1380,12 +1545,72 @@ def generate_pdf():
                 new_y=YPos.NEXT,
             )
 
-        # --- Output the PDF ---
-        # pdf.output() should return bytes. Add checks and conversion.
+        # --- Add Notes to PDF ---
+        notes = notes_data  # Ensure variable for notes
+
+        if notes:
+            pdf.add_page()
+            pdf.set_font("Helvetica", "B", 14)
+            pdf.cell(0, 10, "Zusammengefasste Notizen", 0, 1, "L")
+            pdf.ln(5)
+            pdf.set_font("Helvetica", "", 10)
+            for module_id_str, note_text in notes.items():
+                module_name = all_modules.get(int(module_id_str), {}).get(
+                    "name", f"Modul {module_id_str}"
+                )
+                pdf.set_font("Helvetica", "B", 11)
+                pdf.cell(0, 10, f"Notizen zu Modul {module_id_str}: {module_name}", 0, 1)
+                pdf.set_font("Helvetica", "", 10)
+                pdf.multi_cell(0, 5, note_text)
+                pdf.ln(5)
+
+        # --- Add Benefits to PDF ---
+        benefits = benefits_data  # Ensure variable for benefits
+        if benefits:
+            pdf.add_page()
+            pdf.set_font("Helvetica", "B", 14)
+            pdf.cell(0, 10, f"Mögliche Leistungen bei Pflegegrad {pflegegrad}", 0, 1, "L")
+            pdf.ln(5)
+
+            for period_key, period_data in benefits.items():
+                pdf.set_font("Helvetica", "B", 12)
+                pdf.cell(0, 10, f"Zeitraum: {period_data.get('date_range', 'N/A')}", 0, 1)
+                pdf.ln(2)
+
+                pdf.set_font("Helvetica", "", 10)
+                for item in period_data.get("leistungen", []):
+                    # Draw item name
+                    pdf.set_font("Helvetica", "B", 10)
+                    pdf.multi_cell(130, 5, f"{item.get('name', '')}:", 0, "L")
+
+                    # Store current X and Y to align value
+                    x_pos = pdf.get_x()
+                    y_pos = pdf.get_y()
+
+                    # Move to the right to print value
+                    pdf.set_xy(x_pos + 130, y_pos - 5)
+                    pdf.set_font("Helvetica", "", 10)
+                    pdf.multi_cell(0, 5, item.get('value', ''), 0, "R")
+
+                    # Add note if it exists
+                    if item.get('note'):
+                        pdf.set_font("Helvetica", "I", 9)
+                        pdf.multi_cell(0, 5, f"({item.get('note')})", 0, "L")
+
+                    pdf.ln(4)  # Add space between items
+
+            pdf.ln(5)
+            pdf.set_font("Helvetica", "I", 8)
+            pdf.multi_cell(
+                0,
+                5,
+                "Diese Auflistung ist nicht vollständig und dient nur zur Orientierung. Bitte besprechen Sie die Details mit Ihrer Pflegekasse.",
+            )
+
+        # --- Finalize and Return PDF ---
+        pdf_output_bytes = None
         pdf_data = pdf.output()
-        current_app.logger.info(
-            f"Type returned by pdf.output(): {type(pdf_data)}"
-        )  # Log the type
+        current_app.logger.info(f"Type returned by pdf.output(): {type(pdf_data)}")  # Log the type
 
         # Ensure it's bytes before returning
         if isinstance(pdf_data, bytes):
@@ -1394,30 +1619,22 @@ def generate_pdf():
             pdf_output_bytes = bytes(pdf_data)  # Convert bytearray to bytes
         else:
             # This case should ideally not happen with modern fpdf2
-            current_app.logger.error(
-                f"pdf.output() returned unexpected type: {type(pdf_data)}. Attempting encoding."
-            )
+            current_app.logger.error(f"pdf.output() returned unexpected type: {type(pdf_data)}. Attempting encoding.")
             # Fallback: try encoding if it's somehow a string (less likely)
             try:
                 pdf_output_bytes = str(pdf_data).encode("latin-1", "replace")
             except Exception as enc_err:
-                current_app.logger.error(
-                    f"Fallback encoding failed: {enc_err}", exc_info=True
-                )
+                current_app.logger.error(f"Fallback encoding failed: {enc_err}", exc_info=True)
                 # Raise an error that will be caught by the outer try/except
                 raise ValueError("Failed to get PDF output as bytes")
 
         # Log the type *after* potential conversion
-        current_app.logger.info(
-            f"Type being passed to Response: {type(pdf_output_bytes)}"
-        )
+        current_app.logger.info(f"Type being passed to Response: {type(pdf_output_bytes)}")
 
         return Response(
             pdf_output_bytes,  # Pass the verified/converted bytes
             mimetype="application/pdf",
-            headers={
-                "Content-Disposition": "attachment;filename=pflegegrad_results.pdf"
-            },
+            headers={"Content-Disposition": "attachment;filename=pflegegrad_results.pdf"},
         )
 
     except Exception as e:
@@ -1442,13 +1659,46 @@ def handle_404(error):
 @app.errorhandler(500)
 def handle_500(error):
     """Return a generic 500 page while logging the exception."""
-    current_app.logger.error(f"500 Internal Server Error: {error}", exc_info=True)
+    app.logger.error(f"Server Error: {error}", exc_info=True)
     return render_template("500.html"), 500
 
 
-# ... (rest of app.py, including if __name__ == '__main__':) ...
-# ... (rest of app.py, including if __name__ == '__main__':) ...
+# --- Application Initialization ---
+# This block runs when the application starts.
+# It creates database tables and the initial admin user if they don't exist.
+try:
+    with app.app_context():
+        db.create_all()
+        # Check for and create admin user from .env
+        admin_user = os.environ.get("ADMIN_USER")
+        admin_email = os.environ.get("ADMIN_EMAIL")
+        admin_password = os.environ.get("ADMIN_PASSWORD")
+
+        if admin_user and admin_email and admin_password:
+            # Check if admin already exists
+            existing_admin = User.query.filter(
+                (User.username == admin_user) | (User.email == admin_email)
+            ).first()
+            if not existing_admin:
+                hashed_password = generate_password_hash(admin_password)
+                new_admin = User(
+                    username=admin_user,
+                    email=admin_email,
+                    password_hash=hashed_password,
+                    name="Admin",
+                    vorname="User",
+                    gdpr_consent=True,  # Implied consent for admin
+                    role="admin",
+                )
+                db.session.add(new_admin)
+                db.session.commit()
+                print(f"Admin user '{admin_user}' created.")
+        print("Database tables created/checked successfully.")
+except Exception as e:
+    print(f"Error during database initialization: {e}")
+
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
+
     

@@ -1,19 +1,59 @@
-{% extends 'base.html' %}
+{% extends "layout.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
-<h1>Ihre Berechnungen</h1>
-{% if entries %}
-<table>
-  <tr><th>Datum</th><th>Punkte</th><th>Pflegegrad</th></tr>
-  {% for e in entries %}
-  <tr>
-    <td>{{ e.timestamp }}</td>
-    <td>{{ e.final_total_score }}</td>
-    <td>{{ e.pflegegrad }}</td>
-  </tr>
-  {% endfor %}
-</table>
-{% else %}
-<p>Noch keine Berechnungen gespeichert.</p>
-{% endif %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8">
+            <h1>Willkommen, {{ current_user.vorname }}!</h1>
+            <h2 class="mt-4">Ihre bisherigen Berechnungen:</h2>
+            {% if calculations %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Datum</th>
+                                <th>Klient</th>
+                                <th>Ergebnis</th>
+                                <th>Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for calc in calculations %}
+                                <tr>
+                                    <td>{{ calc.date }}</td>
+                                    <td>{{ calc.klient_name }}</td>
+                                    <td>Pflegegrad {{ calc.pflegegrad }}</td>
+                                    <td>
+                                        <form action="{{ url_for('generate_pdf') }}" method="post" style="display:inline;">
+                                            <input type="hidden" name="calculation_id" value="{{ loop.index0 }}">
+                                            <button type="submit" class="btn btn-secondary btn-sm">PDF</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p>Sie haben noch keine Berechnungen durchgeführt.</p>
+            {% endif %}
+            <a href="{{ url_for('intro') }}" class="btn btn-primary mt-3">Neue Berechnung starten</a>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Ihre Profildaten</h5>
+                    <p class="card-text">
+                        <strong>Name:</strong> {{ current_user.name }}<br>
+                        <strong>Vorname:</strong> {{ current_user.vorname }}<br>
+                        <strong>Email:</strong> {{ current_user.email }}<br>
+                        <strong>Telefon:</strong> {{ current_user.phone_number or 'N/A' }}<br>
+                        <strong>Firma:</strong> {{ current_user.company or 'N/A' }}
+                    </p>
+                    <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Profil bearbeiten</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

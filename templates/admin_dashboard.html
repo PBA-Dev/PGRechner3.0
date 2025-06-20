@@ -1,20 +1,70 @@
-{% extends 'base.html' %}
-{% block title %}Admin Bereich{% endblock %}
+{% extends "layout.html" %}
+{% block title %}Admin Dashboard{% endblock %}
 {% block content %}
-<h1>Alle Berechnungen</h1>
-{% if entries %}
-<table>
-  <tr><th>User</th><th>Datum</th><th>Punkte</th><th>Pflegegrad</th></tr>
-  {% for e in entries %}
-  <tr>
-    <td>{{ e.user }}</td>
-    <td>{{ e.timestamp }}</td>
-    <td>{{ e.final_total_score }}</td>
-    <td>{{ e.pflegegrad }}</td>
-  </tr>
-  {% endfor %}
-</table>
-{% else %}
-<p>Keine Einträge vorhanden.</p>
-{% endif %}
+<div class="container mt-5">
+    <h1>Admin Dashboard</h1>
+
+    <!-- User Management Section -->
+    <h2 class="mt-4">Benutzerverwaltung</h2>
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Name</th>
+                    <th>Rolle</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.username }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.vorname }} {{ user.name }}</td>
+                        <td>{{ user.role }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Calculations Section -->
+    <h2 class="mt-5">Alle Berechnungen</h2>
+    {% if calculations %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Berater</th>
+                        <th>Klient</th>
+                        <th>Ergebnis</th>
+                        <th>Aktion</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for calc in calculations %}
+                        <tr>
+                            <td>{{ calc.date }}</td>
+                            <td>{{ calc.berater_name }}</td>
+                            <td>{{ calc.klient_name }}</td>
+                            <td>Pflegegrad {{ calc.pflegegrad }}</td>
+                            <td>
+                                <form action="{{ url_for('generate_pdf') }}" method="post" style="display:inline;">
+                                    <input type="hidden" name="calculation_id" value="{{ loop.index0 }}">
+                                    <button type="submit" class="btn btn-secondary btn-sm">PDF</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>Bisher wurden keine Berechnungen durchgeführt.</p>
+    {% endif %}
+</div>
 {% endblock %}

@@ -4,11 +4,16 @@ services:
   pgrechner_app:
     build: .
     container_name: pgrechner_app
+    volumes:
+      - .:/app
     env_file: .env
     depends_on:
       - pgrechner_db
     networks:
       - proxy_network
+    ports:
+      - "5000:5000"
+
 
   pgrechner_db:
     image: postgres:15-alpine
@@ -38,8 +43,9 @@ services:
 
 volumes:
   pgrechner_db_data:
+    
 
 networks:
   proxy_network:
-    external: true
+    # external: true # remove comment when in Production
     
