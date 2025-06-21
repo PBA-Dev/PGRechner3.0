@@ -14,6 +14,7 @@ from flask import (
     current_app,
     jsonify,
 )
+from datetime import datetime
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 from modules.module1 import module1
@@ -324,6 +325,8 @@ from flask_mail import Mail, Message
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
+from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 
 app.config.update(
     MAIL_SERVER='smtp.gmail.com',
@@ -572,20 +575,24 @@ def intro():
 @app.route("/dashboard")
 @login_required
 def dashboard():
-    """Display user's previous calculations."""
-    username = current_user.username
-    all_entries = load_calculations()
-    user_entries = [e for e in all_entries if e.get("user") == username]
-    user_entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
-    return render_template("dashboard.html", entries=user_entries)
+    user_calculations = []
+    all_calculations = load_calculations()
+    if current_user.is_authenticated:
+        for calc in all_calculations:
+            if calc.get("user_id") == current_user.id:
+                user_calculations.append(calc)
+    return render_template("dashboard.html", calculations=user_calculations)
 
 
 @app.route("/admin")
 @login_required
 @admin_required
-def admin():
+def admin_dashboard():
     all_users = User.query.all()
-    return render_template("admin.html", users=all_users)
+    calculations = load_calculations()
+    return render_template(
+        "admin_dashboard.html", users=all_users, calculations=calculations
+    )
 
 
 class ChangePasswordForm(FlaskForm):
@@ -605,6 +612,13 @@ class ResetPasswordForm(FlaskForm):
                                      validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Reset Password')
 
+class EditProfileForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    vorname = StringField('Vorname', validators=[DataRequired()])
+    phone_number = StringField('Telefon')
+    company = StringField('Firma')
+    submit = SubmitField('Speichern')
+
 
 def send_reset_email(user):
     token = user.get_reset_token()
@@ -622,17 +636,21 @@ If you did not make this request then simply ignore this email and no changes wi
 @app.route("/edit_profile", methods=["GET", "POST"])
 @login_required
 def edit_profile():
-    form = ChangePasswordForm()
+    form = EditProfileForm()
     if form.validate_on_submit():
-        if check_password_hash(current_user.password_hash, form.current_password.data):
-            hashed_password = generate_password_hash(form.new_password.data)
-            current_user.password_hash = hashed_password
-            db.session.commit()
-            flash("Your password has been updated successfully.", "success")
-            return redirect(url_for('dashboard'))
-        else:
-            flash("Incorrect current password. Please try again.", "danger")
-    return render_template("edit_profile.html", form=form)
+        current_user.name = form.name.data
+        current_user.vorname = form.vorname.data
+        current_user.phone_number = form.phone_number.data
+        current_user.company = form.company.data
+        db.session.commit()
+        flash("Your profile has been updated.", "success")
+        return redirect(url_for("dashboard"))
+    elif request.method == "GET":
+        form.name.data = current_user.name
+        form.vorname.data = current_user.vorname
+        form.phone_number.data = current_user.phone_number
+        form.company.data = current_user.company
+    return render_template("edit_profile.html", title="Edit Profile", form=form)
 
 
 @app.route("/start", methods=["POST"])
@@ -960,7 +978,7 @@ def module_page_submit(module_id):
 @app.route("/calculate")
 def calculate():
     if "module_answers" not in session or not session["module_answers"]:
-        flash("Bitte füllen Sie zuerst die Module aus.", "warning")
+        flash("No answers provided. Please start the questionnaire.", "warning")
         return redirect(url_for("intro"))
 
     all_answers = session.get("module_answers", {})
@@ -994,7 +1012,6 @@ def calculate():
         all_detailed_answers[module_id_str] = current_detailed_answers
 
     # --- Map Raw Scores to Weighted Scores (using mapping function) ---
-    # (Keep existing logic)
     for module_id_str, raw_score in module_scores_raw.items():
         module_id = int(module_id_str)
         if module_id in all_modules:
@@ -1005,7 +1022,6 @@ def calculate():
             module_scores_weighted[module_id_str] = 0.0
 
     # --- Calculate Final Total Score ---
-    # (Keep existing logic)
     final_total_score = 0
     which_module_contributed_m2_m3 = None
     m1_score = module_scores_weighted.get("1", 0.0)
@@ -1027,7 +1043,6 @@ def calculate():
     final_total_score += m6_score
 
     # --- Determine Pflegegrad ---
-    # (Keep existing logic)
     pflegegrad = 0
     for grad, threshold in sorted(
         pflegegrad_thresholds.items(), key=lambda item: item[1]["min_points"]
@@ -1038,7 +1053,6 @@ def calculate():
             break
 
     # --- Aggregate Notes ---
-    # (Keep existing logic)
     aggregated_notes = {
         mid: data.get("notes", "")
         for mid, data in all_answers.items()
@@ -1046,11 +1060,9 @@ def calculate():
     }
 
     # --- Get Benefits Data ---
-    # Fetch all benefit periods for the determined Pflegegrad
     benefits_for_pg = pflegegrad_benefits.get(pflegegrad, {})
 
     # --- Prepare results for template ---
-    # (Keep existing structure)
     results = {
         "final_total_score": round(final_total_score, 2),
         "pflegegrad": pflegegrad,
@@ -1062,27 +1074,41 @@ def calculate():
         "benefits": benefits_for_pg,  # Pass all benefits data for the pflegegrad
     }
 
-    session["results"] = results  # Keep storing in session if needed elsewhere
+    # Store results in session for the result page
+    session["results"] = results
+    session.pop("module_answers", None)  # Clear module answers to reduce cookie size
+    session.pop("user_info", None)  # Clear user info to prevent stale data
 
-    # Persist results if user is logged in
+    # Save calculation to JSON file if the user is authenticated
     if current_user.is_authenticated:
-        entry = {
-            "user": current_user.username,
-            "timestamp": date.today().isoformat(),
-            "final_total_score": results["final_total_score"],
+        user_info = session.get("user_info", {})
+        new_calculation = {
+            "user_id": current_user.id,
+            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "berater_name": user_info.get("berater_name"),
+            "klient_name": user_info.get("client_name"),
             "pflegegrad": results["pflegegrad"],
+            "results": results,  # Save the full results
         }
-        save_calculation(entry)
+        save_calculation(new_calculation)
 
-    # Pass necessary variables to the template
+    # Redirect to the result page
+    return redirect(url_for("result_page"))
+
+
+@app.route("/result")
+def result_page():
+    """Displays the result page."""
+    results = session.get("results")
+    user_info = session.get("user_info")
+    if not results:
+        flash("No results found. Please start a new calculation.", "warning")
+        return redirect(url_for("intro"))
     return render_template(
         "result.html",
         results=results,
+        user_info=user_info,
         all_modules=all_modules,
-        pflegegrad_thresholds=pflegegrad_thresholds,
-        user_info=session.get("user_info", {}),
-        # Add TOTAL_MODULES if used in result.html
-        # TOTAL_MODULES=TOTAL_MODULES
     )
 
 
@@ -1109,8 +1135,7 @@ pflegegrad_thresholds = {
 def generate_pdf():
     """
     Generates a PDF document based on the calculation results provided in the request body.
-    Handles M5 frequency, notes, benefits. Uses updated FPDF2 syntax.
-    Includes type checking for pdf.output() result.
+    Handles M5 frequency, notes, benefits. Uses Unicode fonts.
     """
     data = None
     try:
@@ -1138,9 +1163,18 @@ def generate_pdf():
         logo_url = "https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg"
 
         pdf = FPDF()
+        font_path = "dejavu-sans/ttf/"
+        pdf.add_font("DejaVu", "", f"{font_path}DejaVuSans.ttf", uni=True)
+        pdf.add_font("DejaVu", "B", f"{font_path}DejaVuSans-Bold.ttf", uni=True)
+        pdf.add_font("DejaVu", "I", f"{font_path}DejaVuSans-Oblique.ttf", uni=True)
+        pdf.add_font("DejaVu", "BI", f"{font_path}DejaVuSans-BoldOblique.ttf", uni=True)
+
         usable_width = pdf.w - pdf.l_margin - pdf.r_margin
 
-        # Company Header
+        def check_page_break(pdf_obj, height_needed=10):
+            if pdf_obj.get_y() + height_needed > pdf_obj.page_break_trigger:
+                pdf_obj.add_page()
+
         # --- Cover Page ---
         pdf.add_page()
         try:
@@ -1148,36 +1182,13 @@ def generate_pdf():
         except Exception:
             pass  # Ignore logo errors
         pdf.ln(20)
-        pdf.set_font("Arial", "B", 20)
-        pdf.cell(
-            usable_width,
-            12,
-            "Optimum Pflegeberatung".encode("latin-1", "replace").decode("latin-1"),
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-            align="C",
-        )
-        pdf.set_font("Arial", "", 14)
-        pdf.cell(
-            usable_width,
-            10,
-            "Pflegegrad Management Service".encode("latin-1", "replace").decode(
-                "latin-1"
-            ),
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-            align="C",
-        )
+        pdf.set_font("DejaVu", "B", 20)
+        pdf.cell(usable_width, 12, "Optimum Pflegeberatung", ln=1, align="C")
+        pdf.set_font("DejaVu", "", 14)
+        pdf.cell(usable_width, 10, "Pflegegrad Management Service", ln=1, align="C")
         pdf.ln(60)
-        pdf.set_font("Arial", "B", 16)
-        pdf.cell(
-            usable_width,
-            10,
-            "Ergebnisbericht".encode("latin-1", "replace").decode("latin-1"),
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-            align="C",
-        )
+        pdf.set_font("DejaVu", "B", 16)
+        pdf.cell(usable_width, 10, "Ergebnisbericht", ln=1, align="C")
 
         # --- Info Page ---
         pdf.add_page()
@@ -1186,180 +1197,67 @@ def generate_pdf():
         except Exception:
             pass
         pdf.ln(10)
-        pdf.set_font("Arial", "B", 14)
-        pdf.multi_cell(
-            usable_width,
-            8,
-            "Optimum Pflegeberatung".encode("latin-1", "replace").decode("latin-1"),
-            align="C",
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-        )
-        pdf.set_font("Arial", size=10)
-        pdf.multi_cell(
-            usable_width,
-            5,
-            "Verena Campbell - Pflegeberaterin".encode("latin-1", "replace").decode(
-                "latin-1"
-            ),
-            align="C",
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-        )
-        pdf.multi_cell(
-            usable_width,
-            5,
-            "verena.campbell@optimum-pflegeberatung.de".encode(
-                "latin-1", "replace"
-            ).decode("latin-1"),
-            align="C",
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-        )
+        pdf.set_font("DejaVu", "B", 20)
+        pdf.multi_cell(usable_width, 8, "Optimum Pflegeberatung", align="C")
+        pdf.set_font("DejaVu", "", 10)
+        pdf.multi_cell(usable_width, 5, "Verena Campbell - Pflegeberaterin", align="C")
+        pdf.multi_cell(usable_width, 5, "verena.campbell@optimum-pflegeberatung.de", align="C")
         pdf.ln(5)
 
         # --- Summary ---
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(
-            usable_width,
-            8,
-            "Zusammenfassung".encode("latin-1", "replace").decode("latin-1"),
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-        )
-        pdf.set_font("Arial", size=12)
+        pdf.set_font("DejaVu", "B", 12)
+        pdf.cell(usable_width, 8, "Zusammenfassung", ln=1)
+        pdf.set_font("DejaVu", "", 12)
         score_text = f"Gesamtpunktzahl (fuer Pflegegrad): {final_total_score:.2f}"
-        pdf.cell(
-            usable_width,
-            8,
-            score_text.encode("latin-1", "replace").decode("latin-1"),
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-        )
+        pdf.cell(usable_width, 8, score_text, ln=1)
         pg_text = (
             f"Ermittelter Pflegegrad: {pflegegrad}"
             if pflegegrad > 0
             else "Ermittelter Pflegegrad: Kein Pflegegrad (unter 12.5 Punkte)"
         )
-        pdf.cell(
-            usable_width,
-            8,
-            pg_text.encode("latin-1", "replace").decode("latin-1"),
-            new_x=XPos.LMARGIN,
-            new_y=YPos.NEXT,
-        )
+        pdf.cell(usable_width, 8, pg_text, ln=1)
         pdf.ln(5)
 
         # User / Client Information
         if user_info:
-            pdf.set_font("Arial", "B", 12)
-            pdf.cell(
-                usable_width,
-                8,
-                "Daten".encode("latin-1", "replace").decode("latin-1"),
-                new_x=XPos.LMARGIN,
-                new_y=YPos.NEXT,
-            )
-            pdf.set_font("Arial", size=10)
-            if user_info.get("berater_name"):
-                pdf.cell(
-                    usable_width,
-                    5,
-                    f"Pflegeberater/in: {user_info.get('berater_name')}".encode(
-                        "latin-1", "replace"
-                    ).decode("latin-1"),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
-            if user_info.get("client_name"):
-                pdf.cell(
-                    usable_width,
-                    5,
-                    f"Klient/in: {user_info.get('client_name')}".encode(
-                        "latin-1", "replace"
-                    ).decode("latin-1"),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
-            if user_info.get("insurance_number"):
-                pdf.cell(
-                    usable_width,
-                    5,
-                    f"Krankenversicherungsnummer: {user_info.get('insurance_number')}".encode(
-                        "latin-1", "replace"
-                    ).decode(
-                        "latin-1"
-                    ),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
-            if user_info.get("dob"):
-                pdf.cell(
-                    usable_width,
-                    5,
-                    f"Geburtsdatum: {user_info.get('dob')}".encode(
-                        "latin-1", "replace"
-                    ).decode("latin-1"),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
-            if user_info.get("address"):
-                pdf.cell(
-                    usable_width,
-                    5,
-                    f"Adresse: {user_info.get('address')}".encode(
-                        "latin-1", "replace"
-                    ).decode("latin-1"),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
-            if user_info.get("phone"):
-                pdf.cell(
-                    usable_width,
-                    5,
-                    f"Telefon: {user_info.get('phone')}".encode(
-                        "latin-1", "replace"
-                    ).decode("latin-1"),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
+            pdf.set_font("DejaVu", "B", 12)
+            pdf.cell(usable_width, 8, "Daten", ln=1)
+            pdf.set_font("DejaVu", "", 10)
+            for key, label in [
+                ("berater_name", "Pflegeberater/in"),
+                ("client_name", "Klient/in"),
+                ("insurance_number", "Krankenversicherungsnummer"),
+                ("dob", "Geburtsdatum"),
+                ("address", "Adresse"),
+                ("phone", "Telefon"),
+            ]:
+                value = user_info.get(key)
+                if value:
+                    check_page_break(pdf, 8)
+                    pdf.cell(usable_width, 5, f"{label}: {value}", ln=1)
             pdf.ln(5)
 
         # --- Benefits Display ---
         if benefits_data and benefits_data.get("leistungen"):
-            pdf.set_font("Arial", "B", 12)
+            pdf.set_font("DejaVu", "B", 12)
             benefit_title = f"Wichtige Leistungen bei Pflegegrad {pflegegrad}"
             date_range = benefits_data.get("date_range")
             if date_range:
                 benefit_title += f" ({date_range})"
-            pdf.cell(
-                usable_width,
-                10,
-                benefit_title.encode("latin-1", "replace").decode("latin-1"),
-                new_x=XPos.LMARGIN,
-                new_y=YPos.NEXT,
-            )
-            pdf.set_font("Arial", size=10)
+            check_page_break(pdf, 10)
+            pdf.cell(usable_width, 10, benefit_title, ln=1)
+            pdf.set_font("DejaVu", "", 10)
             for item_dict in benefits_data.get("leistungen", []):
                 item_name = item_dict.get("name", "")
                 item_value = item_dict.get("value", "")
-                pdf.multi_cell(
-                    usable_width,
-                    6,
-                    f"- {item_name}: {item_value}".encode("latin-1", "replace").decode(
-                        "latin-1"
-                    ),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
+                check_page_break(pdf, 6)
+                pdf.multi_cell(usable_width, 6, f"- {item_name}: {item_value}")
             pdf.ln(5)
 
         module_answers_all = detailed_results.get("answers", {})
         module_scores_raw = detailed_results.get("module_scores_raw", {})
         module_scores_weighted = detailed_results.get("module_scores_weighted", {})
-        which_module_contributed = detailed_results.get(
-            "which_module_contributed_m2_m3"
-        )
+        which_module_contributed = detailed_results.get("which_module_contributed_m2_m3")
 
         if isinstance(module_answers_all, dict):
             for module_id_str in sorted(
@@ -1376,68 +1274,32 @@ def generate_pdf():
                     continue
 
                 pdf.add_page()
-                pdf.set_font("Arial", "B", 14)
+                pdf.set_font("DejaVu", "B", 14)
                 module_name = module_info.get("name", f"Modul {module_id}")
-                pdf.multi_cell(
-                    usable_width,
-                    10,
-                    f"Modul {module_id}: {module_name}".encode(
-                        "latin-1", "replace"
-                    ).decode("latin-1"),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
-                pdf.set_font("Arial", size=11)
+                pdf.multi_cell(usable_width, 10, f"Modul {module_id}: {module_name}")
+                pdf.set_font("DejaVu", "", 11)
 
                 raw_score = module_scores_raw.get(module_id_str, 0.0)
                 weighted_score = module_scores_weighted.get(module_id_str, 0.0)
 
-                pdf.cell(
-                    usable_width,
-                    6,
-                    f"Rohpunkte: {float(raw_score):.1f}".encode(
-                        "latin-1", "replace"
-                    ).decode("latin-1"),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
-                pdf.cell(
-                    usable_width,
-                    6,
-                    f"Gewichtete Punkte: {float(weighted_score):.2f}".encode(
-                        "latin-1", "replace"
-                    ).decode("latin-1"),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
+                pdf.cell(usable_width, 6, f"Rohpunkte: {float(raw_score):.1f}", ln=1)
+                pdf.cell(usable_width, 6, f"Gewichtete Punkte: {float(weighted_score):.2f}", ln=1)
 
-                if module_id_str in ["2", "3"]:
+                if module_id in [2, 3]:
                     note_text = "(Nicht fuer Gesamtpunktzahl beruecksichtigt)"
                     if (
                         which_module_contributed is not None
                         and module_id == which_module_contributed
                     ):
                         note_text = "(Dieser Wert zaehlt fuer die Gesamtpunktzahl)"
-                    pdf.set_font("Arial", "I", 9)
-                    pdf.cell(
-                        usable_width,
-                        5,
-                        note_text.encode("latin-1", "replace").decode("latin-1"),
-                        new_x=XPos.LMARGIN,
-                        new_y=YPos.NEXT,
-                    )
-                    pdf.set_font("Arial", size=11)
+                    pdf.set_font("DejaVu", "I", 9)
+                    pdf.cell(usable_width, 5, note_text, ln=1)
+                    pdf.set_font("DejaVu", "", 11)
 
                 pdf.ln(2)
-                pdf.set_font("Arial", "B", 12)
-                pdf.cell(
-                    usable_width,
-                    6,
-                    "Antworten:".encode("latin-1", "replace").decode("latin-1"),
-                    new_x=XPos.LMARGIN,
-                    new_y=YPos.NEXT,
-                )
-                pdf.set_font("Arial", size=11)
+                pdf.set_font("DejaVu", "B", 12)
+                pdf.cell(usable_width, 6, "Antworten:", ln=1)
+                pdf.set_font("DejaVu", "", 11)
 
                 if isinstance(module_answers, dict) and module_answers:
                     try:
@@ -1464,190 +1326,79 @@ def generate_pdf():
                                 idx = int(q_key)
                                 if idx < len(questions):
                                     question_id = questions[idx].get("id")
-                            elif module_id == 5:
-                                question_id = q_key
-
-                            if question_id:
-                                q_text = f"{question_id} {q_text}"
+                            module_text = f"{question_id} {q_text}"
 
                             if answer_data.get("type") == "frequency":
                                 count = answer_data.get("count", "N/A")
                                 unit = answer_data.get("unit", "N/A")
-                                full_text = f"- {q_text}: {count}x pro {unit} ({a_score} Rohpunkte)"
-                            else:
-                                full_text = (
-                                    f"- {q_text}: {a_text} ({a_score} Rohpunkte)"
-                                )
+                                a_text = f"{count} mal pro {unit}"
 
-                            pdf.multi_cell(
-                                usable_width,
-                                5,
-                                full_text.encode("latin-1", "replace").decode(
-                                    "latin-1"
-                                ),
-                                new_x=XPos.LMARGIN,
-                                new_y=YPos.NEXT,
-                            )
+                            check_page_break(pdf, 10)
+                            pdf.set_font("DejaVu", "B", 10)
+                            pdf.multi_cell(usable_width, 5, module_text)
+                            pdf.set_font("DejaVu", "", 10)
+                            pdf.multi_cell(usable_width, 5, f"   Antwort: {a_text} (Punkte: {a_score})")
+                            pdf.ln(1)
+                        elif isinstance(answer_data, str):
+                            # Handle answer as plain string (fallback)
+                            check_page_break(pdf, 10)
+                            pdf.set_font("DejaVu", "B", 10)
+                            pdf.multi_cell(usable_width, 5, f"Frage {q_key}")
+                            pdf.set_font("DejaVu", "", 10)
+                            pdf.multi_cell(usable_width, 5, f"   Antwort: {answer_data}")
                             pdf.ln(1)
 
-                        else:
-                            pdf.multi_cell(
-                                usable_width,
-                                5,
-                                f"- Frage {q_key}: Ungültige Antwortdaten".encode(
-                                    "latin-1", "replace"
-                                ).decode("latin-1"),
-                                new_x=XPos.LMARGIN,
-                                new_y=YPos.NEXT,
-                            )
-                else:
-                    pdf.cell(
-                        usable_width,
-                        5,
-                        "- Keine Antworten fuer dieses Modul vorhanden.".encode(
-                            "latin-1", "replace"
-                        ).decode("latin-1"),
-                        new_x=XPos.LMARGIN,
-                        new_y=YPos.NEXT,
-                    )
-
-                # Display Notes for Module
-                module_note = notes_data.get(module_id_str, "")
-                if module_note:
+                module_notes = module_answers.get("notes", "")
+                if module_notes:
                     pdf.ln(2)
-                    pdf.set_font("Arial", "B", 10)
-                    pdf.cell(
-                        usable_width,
-                        6,
-                        "Notizen:".encode("latin-1", "replace").decode("latin-1"),
-                        new_x=XPos.LMARGIN,
-                        new_y=YPos.NEXT,
-                    )
-                    pdf.set_font("Arial", size=11)
-                    pdf.multi_cell(
-                        usable_width,
-                        5,
-                        module_note.encode("latin-1", "replace").decode("latin-1"),
-                        new_x=XPos.LMARGIN,
-                        new_y=YPos.NEXT,
-                    )
+                    pdf.set_font("DejaVu", "B", 11)
+                    pdf.multi_cell(usable_width, 6, "Notizen zum Modul:")
+                    pdf.set_font("DejaVu", "", 10)
+                    pdf.multi_cell(usable_width, 5, module_notes)
+                    pdf.ln(2)
 
-                pdf.ln(4)
-        else:
-            pdf.set_font("Arial", "I", 10)
-            pdf.multi_cell(
-                usable_width,
-                6,
-                "Fehler: Detaillierte Antworten konnten nicht geladen werden.".encode(
-                    "latin-1", "replace"
-                ).decode("latin-1"),
-                new_x=XPos.LMARGIN,
-                new_y=YPos.NEXT,
+        # --- Aggregated Notes Section ---
+        if notes_data:
+            pdf.add_page()
+            pdf.set_font("DejaVu", "B", 14)
+            pdf.cell(usable_width, 10, "Zusätzliche Notizen", ln=1)
+            pdf.set_font("DejaVu", "", 11)
+            pdf.ln(5)
+
+            sorted_notes_keys = sorted(
+                notes_data.keys(), key=lambda k: int(k) if k.isdigit() else 999
             )
 
-        # --- Add Notes to PDF ---
-        notes = notes_data  # Ensure variable for notes
+            for module_id_str in sorted_notes_keys:
+                if not module_id_str.isdigit():
+                    continue
+                module_id = int(module_id_str)
+                module_info = all_modules.get(module_id)
+                if not module_info:
+                    continue
 
-        if notes:
-            pdf.add_page()
-            pdf.set_font("Helvetica", "B", 14)
-            pdf.cell(0, 10, "Zusammengefasste Notizen", 0, 1, "L")
-            pdf.ln(5)
-            pdf.set_font("Helvetica", "", 10)
-            for module_id_str, note_text in notes.items():
-                module_name = all_modules.get(int(module_id_str), {}).get(
-                    "name", f"Modul {module_id_str}"
-                )
-                pdf.set_font("Helvetica", "B", 11)
-                pdf.cell(0, 10, f"Notizen zu Modul {module_id_str}: {module_name}", 0, 1)
-                pdf.set_font("Helvetica", "", 10)
-                pdf.multi_cell(0, 5, note_text)
-                pdf.ln(5)
+                note_text = notes_data[module_id_str]
+                if note_text:
+                    module_name = module_info.get("name", f"Modul {module_id}")
+                    check_page_break(pdf, 10)
+                    pdf.set_font("DejaVu", "B", 12)
+                    pdf.multi_cell(usable_width, 6, f"Modul {module_id}: {module_name}")
+                    pdf.set_font("DejaVu", "", 10)
+                    pdf.multi_cell(usable_width, 5, note_text)
+                    pdf.ln(3)
 
-        # --- Add Benefits to PDF ---
-        benefits = benefits_data  # Ensure variable for benefits
-        if benefits:
-            pdf.add_page()
-            pdf.set_font("Helvetica", "B", 14)
-            pdf.cell(0, 10, f"Mögliche Leistungen bei Pflegegrad {pflegegrad}", 0, 1, "L")
-            pdf.ln(5)
+        # Output PDF to bytes
+        pdf_output = pdf.output(dest='S')
 
-            for period_key, period_data in benefits.items():
-                pdf.set_font("Helvetica", "B", 12)
-                pdf.cell(0, 10, f"Zeitraum: {period_data.get('date_range', 'N/A')}", 0, 1)
-                pdf.ln(2)
-
-                pdf.set_font("Helvetica", "", 10)
-                for item in period_data.get("leistungen", []):
-                    # Draw item name
-                    pdf.set_font("Helvetica", "B", 10)
-                    pdf.multi_cell(130, 5, f"{item.get('name', '')}:", 0, "L")
-
-                    # Store current X and Y to align value
-                    x_pos = pdf.get_x()
-                    y_pos = pdf.get_y()
-
-                    # Move to the right to print value
-                    pdf.set_xy(x_pos + 130, y_pos - 5)
-                    pdf.set_font("Helvetica", "", 10)
-                    pdf.multi_cell(0, 5, item.get('value', ''), 0, "R")
-
-                    # Add note if it exists
-                    if item.get('note'):
-                        pdf.set_font("Helvetica", "I", 9)
-                        pdf.multi_cell(0, 5, f"({item.get('note')})", 0, "L")
-
-                    pdf.ln(4)  # Add space between items
-
-            pdf.ln(5)
-            pdf.set_font("Helvetica", "I", 8)
-            pdf.multi_cell(
-                0,
-                5,
-                "Diese Auflistung ist nicht vollständig und dient nur zur Orientierung. Bitte besprechen Sie die Details mit Ihrer Pflegekasse.",
-            )
-
-        # --- Finalize and Return PDF ---
-        pdf_output_bytes = None
-        pdf_data = pdf.output()
-        current_app.logger.info(f"Type returned by pdf.output(): {type(pdf_data)}")  # Log the type
-
-        # Ensure it's bytes before returning
-        if isinstance(pdf_data, bytes):
-            pdf_output_bytes = pdf_data
-        elif isinstance(pdf_data, bytearray):
-            pdf_output_bytes = bytes(pdf_data)  # Convert bytearray to bytes
-        else:
-            # This case should ideally not happen with modern fpdf2
-            current_app.logger.error(f"pdf.output() returned unexpected type: {type(pdf_data)}. Attempting encoding.")
-            # Fallback: try encoding if it's somehow a string (less likely)
-            try:
-                pdf_output_bytes = str(pdf_data).encode("latin-1", "replace")
-            except Exception as enc_err:
-                current_app.logger.error(f"Fallback encoding failed: {enc_err}", exc_info=True)
-                # Raise an error that will be caught by the outer try/except
-                raise ValueError("Failed to get PDF output as bytes")
-
-        # Log the type *after* potential conversion
-        current_app.logger.info(f"Type being passed to Response: {type(pdf_output_bytes)}")
-
-        return Response(
-            pdf_output_bytes,  # Pass the verified/converted bytes
-            mimetype="application/pdf",
-            headers={"Content-Disposition": "attachment;filename=pflegegrad_results.pdf"},
-        )
+        # Return PDF as response
+        response = make_response(pdf_output)
+        response.headers.set('Content-Type', 'application/pdf')
+        response.headers.set('Content-Disposition', 'attachment', filename='pflegegrad_report.pdf')
+        return response
 
     except Exception as e:
         current_app.logger.error(f"Error generating PDF: {e}", exc_info=True)
-        return (
-            jsonify(
-                {
-                    "error": f"An internal server error occurred during PDF generation: {e}"
-                }
-            ),
-            500,
-        )
-
+        return jsonify({"error": "Failed to generate PDF."}), 500
 
 @app.errorhandler(404)
 def handle_404(error):

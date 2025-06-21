@@ -51,6 +51,7 @@
                         <strong>Firma:</strong> {{ current_user.company or 'N/A' }}
                     </p>
                     <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Profil bearbeiten</a>
+                    <a href="{{ url_for('reset_request') }}" class="btn btn-secondary mt-2">Passwort ändern</a>
                 </div>
             </div>
         </div>
