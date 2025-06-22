@@ -14,7 +14,7 @@ from flask import (
     current_app,
     jsonify,
 )
-from datetime import datetime
+from datetime import datetime, date
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 from modules.module1 import module1
@@ -1075,7 +1075,14 @@ def calculate():
     }
 
     # --- Get Benefits Data ---
+    today = date.today()
+    current_period_key = "period_2" if today >= date(today.year, 7, 1) else "period_1"
     benefits_for_pg = pflegegrad_benefits.get(pflegegrad, {})
+    benefits_selected = benefits_for_pg.get(current_period_key)
+    if not benefits_selected:
+        fallback_period = "period_1" if current_period_key == "period_2" else "period_2"
+        benefits_selected = benefits_for_pg.get(fallback_period, {})
+
 
     # --- Prepare results for template ---
     results = {
@@ -1086,7 +1093,7 @@ def calculate():
         "which_module_contributed_m2_m3": which_module_contributed_m2_m3,
         "answers": all_detailed_answers,  # Pass detailed answers for display/PDF
         "notes": aggregated_notes,  # Pass aggregated notes
-        "benefits": benefits_for_pg,  # Pass all benefits data for the pflegegrad
+        "benefits": benefits_selected,  # Pass benefits data for the current period
     }
 
     # Store results in session for the result page
