@@ -35,6 +35,7 @@ from flask_login import (
     current_user,
 )
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from flask_mail import Mail, Message
 from dotenv import load_dotenv
 
@@ -1387,13 +1388,20 @@ def generate_pdf():
                     pdf.multi_cell(usable_width, 5, note_text)
                     pdf.ln(3)
 
-        # Output PDF to bytes
-        pdf_output = pdf.output(dest='S').encode("latin-1")
+        pdf_output = pdf.output(dest='S').encode('latin-1')
+
+        # Determine filename using client name if available
+        client_name = user_info.get('client_name', '').strip()
+        if client_name:
+            safe_name = secure_filename(client_name)
+            filename = f'pflegegrad_report_{safe_name}.pdf'
+        else:
+            filename = 'pflegegrad_report.pdf'
 
         # Return PDF as response
         response = make_response(pdf_output)
         response.headers.set('Content-Type', 'application/pdf')
-        response.headers.set('Content-Disposition', 'attachment', filename='pflegegrad_report.pdf')
+        response.headers.set('Content-Disposition', 'attachment', filename=filename)
         return response
 
     except Exception as e:
