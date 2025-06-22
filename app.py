@@ -1272,8 +1272,12 @@ def generate_pdf():
 
                 pdf.add_page()
                 pdf.set_font("DejaVu", "B", 14)
-                module_name = module_info.get("name", f"Modul {module_id}")
-                pdf.multi_cell(usable_width, 10, f"Modul {module_id}: {module_name}")
+                module_name = module_info.get('name', f'Modul {module_id}')
+                if module_name.startswith(f'Modul {module_id}'):
+                    header_text = module_name
+                else:
+                    header_text = f'Modul {module_id}: {module_name}'
+                pdf.multi_cell(usable_width, 10, header_text)
                 pdf.set_font("DejaVu", "", 11)
 
                 raw_score = module_scores_raw.get(module_id_str, 0.0)
@@ -1318,12 +1322,12 @@ def generate_pdf():
                             a_score = answer_data.get("score", "N/A")
 
                             question_id = None
-                            if module_id in [1, 4] and q_key.isdigit():
+                            if q_key.isdigit():
                                 questions = module_info.get("questions", [])
                                 idx = int(q_key)
                                 if idx < len(questions):
                                     question_id = questions[idx].get("id")
-                            module_text = f"{question_id} {q_text}"
+                            module_text = (f"{question_id} {q_text}" if question_id else q_text)
 
                             if answer_data.get("type") == "frequency":
                                 count = answer_data.get("count", "N/A")
@@ -1332,17 +1336,17 @@ def generate_pdf():
 
                             check_page_break(pdf, 10)
                             pdf.set_font("DejaVu", "B", 10)
-                            pdf.multi_cell(usable_width, 5, module_text)
+                            pdf.multi_cell(content_width, 5, module_text)
                             pdf.set_font("DejaVu", "", 10)
-                            pdf.multi_cell(usable_width, 5, f"   Antwort: {a_text} (Punkte: {a_score})")
+                            pdf.multi_cell(content_width, 5, f"   Antwort: {a_text} (Punkte: {a_score})")
                             pdf.ln(1)
                         elif isinstance(answer_data, str):
                             # Handle answer as plain string (fallback)
                             check_page_break(pdf, 10)
                             pdf.set_font("DejaVu", "B", 10)
-                            pdf.multi_cell(usable_width, 5, f"Frage {q_key}")
+                            pdf.multi_cell(content_width, 5, f"Frage {q_key}")
                             pdf.set_font("DejaVu", "", 10)
-                            pdf.multi_cell(usable_width, 5, f"   Antwort: {answer_data}")
+                            pdf.multi_cell(content_width, 5, f"   Antwort: {answer_data}")
                             pdf.ln(1)
 
                 module_notes = module_answers.get("notes", "")
