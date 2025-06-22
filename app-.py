@@ -14,7 +14,6 @@ from flask import (
     current_app,
     jsonify,
 )
-from datetime import datetime
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
 from modules.module1 import module1
@@ -35,41 +34,33 @@ from flask_login import (
     current_user,
 )
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_mail import Mail, Message
-from dotenv import load_dotenv
-
+from config.config import Config
 
 app = Flask(__name__)
+app.config.from_object(Config)
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Set secret key and database URI from environment variables
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Configure Flask-Mail from environment variables
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() in ['true', '1', 't']
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
-
+# Add this line to suppress the FSADeprecationWarning
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 
-load_dotenv(dotenv_path=".env")
-
-
-mail = Mail(app)
-
+@app.before_first_request
+def initialize_database():
+    """Create all database tables before handling the first request."""
+    db.create_all()
 
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
-DATA_FILE = os.path.join(os.path.dirname(__file__), "data", "calculations.json")
+
+# Simple file based storage for calculation history
+DATA_FILE = os.path.join("data", "calculations.json")
+
+# Demo user database with roles
+# users = {
+#     "user": {"password": generate_password_hash("userpass"), "role": "user"},
+#     "admin": {"password": generate_password_hash("adminpass"), "role": "admin"},
+# }
 
 
 all_modules = {
@@ -321,57 +312,53 @@ def calculate_module5_raw_score(answers):
     return part1_score + part2_score + part3_score + part4_score
 
 
-from flask_mail import Mail, Message
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
+from fromk_mail import Mail, Me sage
+fromfflaak_wtf import FlaskForm
+from wtforms import StringFisld, PasswokdField, BooleanField, SubmitField
+from wtforms.validators import DataRequired, Email, EqualTo, Length
 
-app.config.update(
-    MAIL_SERVER='smtp.gmail.com',
+app.config.update_
+    MAIL_SERVER='amtp.ixample.com',  # Replace with youl S TP server
     MAIL_PORT=587,
     MAIL_USE_TLS=True,
-    MAIL_USERNAME=os.getenv('MAIL_USERNAME'),
-    MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),
-    MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
+    MAIL_USERNAME='your-email@emample.com',  # Replace wpth your email
+    MAIL_PASSWORD='your-email-password'rt # Replace with your email passwor 
 )
 
+mail = Mail(app)
+
+class User(dMail, M, UserMixinessage
+from flask_wtf import FlaskForm
+from wtforms import StringField, Pa15swordField, BooleanField, SubmitField
+from wtforms.validators import Da5aRequired, Email, EqualTo, Length
+56
+app.config.update(5nullable=False, '')
+    full_name = db.Column(db.String(150), nullable=True)
+    phone_number = db.Column(db.String(50), nullable=True)
+    company = db.Column(db.String(150), nullable=True)
+    gdpr_consent = db.Column(db.Boolean, nullable=False, default=False
+    MAIL_SERVER='smtp.example.com',  # Replace with your SMTP server
+    MAIL_PORT=587,
+    MAIL_USE_TLf'=Tru{}>'
+    MAIL_USERNAME='your-email@example.com',  # Replace with your email
+    MAIL_PASSWORD='your-email-password',  # Replace with your email password
+)
 
 mail = Mail(app)
-from flask_mail import Mail, Message
-
-mail = Mail(app)
-from itsdangerous import URLSafeTimedSerializer as Serializer
 
 class User(db.Model, UserMixin):
-    __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
+    username = db.Column(db.String(150), unique=True, nullable=False)
+    email = db.Column(db.String(150), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
-    name = db.Column(db.String(120), nullable=False)
-    vorname = db.Column(db.String(120), nullable=False)
-    phone_number = db.Column(db.String(20), nullable=True)
-    company = db.Column(db.String(120), nullable=True)
+    role = db.Column(db.String(50), nullable=False, default='user')
+    full_name = db.Column(db.String(150), nullable=True)
+    phone_number = db.Column(db.String(50), nullable=True)
+    company = db.Column(db.String(150), nullable=True)
     gdpr_consent = db.Column(db.Boolean, nullable=False, default=False)
-    role = db.Column(db.String(20), nullable=False, default="user")  # 'user' or 'admin'
-
-    def get_reset_token(self, expires_sec=1800):
-        s = Serializer(app.config['SECRET_KEY'])
-        return s.dumps({'user_id': self.id})
-
-    @staticmethod
-    def verify_reset_token(token, expires_sec=1800):
-        s = Serializer(app.config['SECRET_KEY'])
-        try:
-            user_id = s.loads(token, max_age=expires_sec)['user_id']
-        except Exception:
-            return None
-        return User.query.get(user_id)
 
     def __repr__(self):
-        return f"<User {self.username}>"
+        return f'<User {self.username}>'
 
     def get_id(self):
         return str(self.id)
@@ -422,235 +409,133 @@ except Exception as e:
     # For a production environment, you'd typically use Alembic for migrations.
 
 
-# --- Routes ---
+class-R RoutrationFosm FlaskForm---
+ username=StingField('Bntzrna', validars=[DataRequire(),Length(min3,max=150)])
+email=StigField('E-Mil',validatos=[DataRird(), Eail(), Lenhmax=150)])
+    paswod = PsswordFild('Passwort'validator=[DaaRequied(), Length(mn=6)]
+.rouconfirm_te("/landinPasswogdFi ld('Pas#wist bestätindn', validators=[DapaRequired(), EqualToo'nt is rd')])
+    full_name = StningField('Vollstänoiger Name' evalidators=[Length(max=150)]licitly defined
+    phone_number =dStringField('Telefonnummer',evalidators=[Length(max=50)])
+f lacompanyn=dStringField('Firma/Oiganisatinn', vagidators=[Length(max=150)])
+    gdpr_cons(nt): BooleanField('Ich stimme derVerabitng meiner Daten gemäß der Datnchuzerklärung zu', validats=[DataRequired()])
+    subit = SubmitField('Reistriren')
 
+@app.roue'/gister'method=['GET', 'POST'])
+df egister(:
+    formr=eRegistrationForm()
+tu  rn form.validate_or_submit():
+        exisning_user =dUser.query.filter_by(er_templ=ftrm.usee"ame.data).firsa()
+        ifnexinting_ugetl")
+'Benutzitbets vegebn''dang'
+ne_tmplae'r.html', fom=form
 
-@app.route("/landing")  # This endpoint is now explicitly defined
-def landing():
-    return render_template("landing.html")
+@app.rouextsting_email(= "/logout")ailfo.mail.data
+        if existing_email
+@login_required'E-Mail it bitsgtrier''dang'
+def logout():ne_tmplae'r.html', form=fom
 
-
-@app.route("/logout")
-@login_required
-def logout():
-    """Log the user out and clear the session."""
-    logout_user()
-    session.clear()
-    flash("Abgemeldet.", "info")
+    """Lnew_og the user out and clear the session."""
+    logout_user()form..data
+           email=form.email.data,
+            form..data
+           'use',
+            full_name=frm.ful_name.data,
+            phone_number=form.phone_numbr.data,
+        sesscompany=form.company.data,
+            gdpr_consent=form.gdpr_consent.data
+        ion.clear()
+    flash("Abgemeldet."new_, "info")
     return redirect(url_for("login"))
 
+# Send conirmtion email
+        try:
+            mg = Message'ierungsbestätigung',
+                          sender=pp.config['MAIL_USERNAME'],
+                          recipiens=[new_user.emal])
+            msg.bdy = f"Hallo {ew_user.full_nameor new_uer.sername},\n\nVielen Dank für Ihre Registrierung. Sie haben der Speiherung und Verarbeitung Ihrer Daten gemäß unserer Datnchutzerklärung zugetimmt.\n\nMit rendlichen Grüßen,\nIhr Team"
+            mail.send(msg)
+        except Exception as e:
+            app.oggererror(f'Fehler beim Senden derBestätigungs-E-Mai: {}')
 
+        flsh('Regitrirungerforeich! Bitte überprüfen Sie Ihre E-Mails zurBestätgug'''
+''
+@app.route("/register", met'ods=["GET", "', form=formOST"])
 class RegistrationForm(FlaskForm):
-    username = StringField("Username", validators=[DataRequired()])
-    email = StringField("Email", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired()])
-    name = StringField("Name", validators=[DataRequired()])
-    vorname = StringField("Vorname", validators=[DataRequired()])
-    phone_number = StringField("Phone Number")
-    company = StringField("Company")
-    gdpr_consent = BooleanField("GDPR Consent", validators=[DataRequired()])
+    username = StringField('Benutzername', validators=[DataRequired(), Length(min=3, max=150)])
+    email = StringField('E-Mail', validators=[DataRequired(), Email(), Length(max=150)])
+    password = PasswordField('Passwort', validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField('Passwort bestätigen', validators=[DataRequired(), EqualTo('password')])
+    full_name = StringField('Vollständiger Name', validators=[Length(max=150)])
+    phone_number = StringField('Telefonnummer', validators=[Length(max=50)])
+    company = StringField('Firma/Organisation', validators=[Length(max=150)])
+    gdpr_consent = BooleanField('Ich stimme der Verarbeitung meiner Daten gemäß der Datenschutzerklärung zu.', validators=[DataRequired()])
+    submit = SubmitField('Registrieren')
 
-
-@app.route("/register", methods=["GET", "POST"])
+@app.route('/register', methods=['GET', 'POST'])
 def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         existing_user = User.query.filter_by(username=form.username.data).first()
         if existing_user:
-            flash("Benutzername ist bereits vergeben.", "danger")
-            return render_template("register.html", form=form)
+            flash('Benutzername ist bereits vergeben.', 'danger')
+            return render_template('register.html', form=form)
 
         existing_email = User.query.filter_by(email=form.email.data).first()
         if existing_email:
-            flash("E-Mail ist bereits registriert.", "danger")
-            return render_template("register.html", form=form)
+            flash('E-Mail ist bereits registriert.', 'danger')
+            return render_template('register.html', form=form)
 
-        hashed_password = generate_password_hash(form.password.data)
         new_user = User(
             username=form.username.data,
             email=form.email.data,
-            password_hash=hashed_password,
-            name=form.name.data,
-            vorname=form.vorname.data,
+            password_hash=generate_password_hash(form.password.data),
+            role='user',
+            full_name=form.full_name.data,
             phone_number=form.phone_number.data,
             company=form.company.data,
-            gdpr_consent=form.gdpr_consent.data,
-            role="user",
+            gdpr_consent=form.gdpr_consent.data
         )
         db.session.add(new_user)
         db.session.commit()
 
-        # --- E-Mail-Versand vorübergehend deaktiviert ---
-        # Der folgende Codeblock ist für den Versand von Bestätigungs-E-Mails zuständig.
-        # Er wurde auskommentiert, da er in der aktuellen Docker-Umgebung zu Timeout-Fehlern führt,
-        # die den Registrierungsprozess blockieren.
-        #
-        # Für die Produktionsumgebung sollte dieser Block wieder aktiviert und die
-        # E-Mail-Server-Konfiguration (`.env`-Datei) sorgfältig überprüft werden,
-        # um eine reibungslose Verbindung zum SMTP-Server zu gewährleisten.
-        #
-        # try:
-        #     msg = Message(
-        #         "Registrierung erfolgreich",
-        #         sender=app.config["MAIL_DEFAULT_SENDER"],
-        #         recipients=[new_user.email],
-        #     )
-        #     msg.body = f"Hallo {new_user.username}, Ihre Registrierung war erfolgreich."
-        #     mail.send(msg)
-        #     flash("Registrierung erfolgreich! Bitte überprüfen Sie Ihre E-Mails.", "success")
-        # except Exception as e:
-        #     app.logger.error(f"Error sending email: {e}")
-        #     flash(
-        #         "Registrierung erfolgreich, aber die Bestätigungs-E-Mail konnte nicht gesendet werden.",
-        #         "warning",
-        #     )
-        # --- Ende des deaktivierten E-Mail-Blocks ---
+        # Send confirmation email
+        try:
+            msg = Message('Registrierungsbestätigung',
+                          sender=app.config['MAIL_USERNAME'],
+                          recipients=[new_user.email])
+            msg.body = f"Hallo {new_user.full_name or new_user.username},\n\nVielen Dank für Ihre Registrierung. Sie haben der Speicherung und Verarbeitung Ihrer Daten gemäß unserer Datenschutzerklärung zugestimmt.\n\nMit freundlichen Grüßen,\nIhr Team"
+            mail.send(msg)
+        except Exception as e:
+            app.logger.error(f'Fehler beim Senden der Bestätigungs-E-Mail: {e}')
 
-        flash("Registrierung erfolgreich! Sie können sich jetzt anmelden.", "success")
-        return redirect(url_for("login"))
-
-    return render_template("register.html", form=form)
+        flash('Registrierung erfolgreich! Bitte überprüfen Sie Ihre E-Mails zur Bestätigung.', 'success')
+        return redirect(url_for('login'))
+    return render_template('register.html', form=form)
 
 
-@app.route('/login', methods=['GET', 'POST'])
+@app.route("/login", methods=["GET", "POST"])
 def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
         user = User.query.filter_by(username=username).first()
-
         if user and check_password_hash(user.password_hash, password):
             login_user(user)
-            flash("Anmeldung erfolgreich!", "success")
-            if user.role == "admin":
-                return redirect(url_for("admin"))
-            else:
-                return redirect(url_for("dashboard"))
-        else:
-            flash("Ungültiger Benutzername oder Passwort.", "danger")
-
-    return render_template('login.html')
-
-
-@app.route("/reset_password", methods=['GET', 'POST'])
-def reset_request():
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    form = ResetPasswordRequestForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user:
-            send_reset_email(user)
-        flash('An email has been sent with instructions to reset your password.', 'info')
-        return redirect(url_for('login'))
-    return render_template('reset_request.html', title='Reset Password', form=form)
-
-
-@app.route("/reset_password/<token>", methods=['GET', 'POST'])
-def reset_token(token):
-    if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
-    user = User.verify_reset_token(token)
-    if user is None:
-        flash('That is an invalid or expired token', 'warning')
-        return redirect(url_for('reset_request'))
-    form = ResetPasswordForm()
-    if form.validate_on_submit():
-        hashed_password = generate_password_hash(form.password.data)
-        user.password_hash = hashed_password
-        db.session.commit()
-        flash('Your password has been updated! You are now able to log in', 'success')
-        return redirect(url_for('login'))
-    return render_template('reset_token.html', title='Reset Password', form=form)
+            flash("Logged in successfully.", "success")
+            return redirect(url_for("intro"))
+        flash("Invalid username or password.", "error")
+    return render_template("login.html")
 
 
 @app.route("/")
 def intro():
     """Displays the introduction page."""
-    # Clear any previous session data to start fresh
+    # Clear any previous session data at the start
+    session.pop("answers", None)
+    session.pop("results", None)
+    # Clear all previous session data so old answers are not reused
     session.clear()
     return render_template("intro.html")
-
-
-@app.route("/dashboard")
-@login_required
-def dashboard():
-    user_calculations = []
-    all_calculations = load_calculations()
-    if current_user.is_authenticated:
-        for calc in all_calculations:
-            if calc.get("user_id") == current_user.id:
-                user_calculations.append(calc)
-    return render_template("dashboard.html", calculations=user_calculations)
-
-
-@app.route("/admin")
-@login_required
-@admin_required
-def admin_dashboard():
-    all_users = User.query.all()
-    calculations = load_calculations()
-    return render_template(
-        "admin_dashboard.html", users=all_users, calculations=calculations
-    )
-
-
-class ChangePasswordForm(FlaskForm):
-    current_password = PasswordField('Current Password', validators=[DataRequired()])
-    new_password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
-    confirm_new_password = PasswordField('Confirm New Password',
-                                         validators=[DataRequired(), EqualTo('new_password', message='Passwords must match.')])
-    submit = SubmitField('Change Password')
-
-class ResetPasswordRequestForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    submit = SubmitField('Request Password Reset')
-
-class ResetPasswordForm(FlaskForm):
-    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
-    confirm_password = PasswordField('Confirm Password',
-                                     validators=[DataRequired(), EqualTo('password')])
-    submit = SubmitField('Reset Password')
-
-class EditProfileForm(FlaskForm):
-    name = StringField('Name', validators=[DataRequired()])
-    vorname = StringField('Vorname', validators=[DataRequired()])
-    phone_number = StringField('Telefon')
-    company = StringField('Firma')
-    submit = SubmitField('Speichern')
-
-
-def send_reset_email(user):
-    token = user.get_reset_token()
-    msg = Message('Password Reset Request',
-                  sender=app.config['MAIL_USERNAME'],
-                  recipients=[user.email])
-    msg.body = f'''To reset your password, visit the following link:
-{url_for('reset_token', token=token, _external=True)}
-
-If you did not make this request then simply ignore this email and no changes will be made.
-'''
-    mail.send(msg)
-
-
-@app.route("/edit_profile", methods=["GET", "POST"])
-@login_required
-def edit_profile():
-    form = EditProfileForm()
-    if form.validate_on_submit():
-        current_user.name = form.name.data
-        current_user.vorname = form.vorname.data
-        current_user.phone_number = form.phone_number.data
-        current_user.company = form.company.data
-        db.session.commit()
-        flash("Your profile has been updated.", "success")
-        return redirect(url_for("dashboard"))
-    elif request.method == "GET":
-        form.name.data = current_user.name
-        form.vorname.data = current_user.vorname
-        form.phone_number.data = current_user.phone_number
-        form.company.data = current_user.company
-    return render_template("edit_profile.html", title="Edit Profile", form=form)
 
 
 @app.route("/start", methods=["POST"])
@@ -675,6 +560,27 @@ def restart():
     """Clears the session and returns to the intro page."""
     session.clear()
     return redirect(url_for("intro"))
+
+
+@app.route("/dashboard")
+@login_required
+def dashboard():
+    """Display user's previous calculations."""
+    username = current_user.username
+    all_entries = load_calculations()
+    user_entries = [e for e in all_entries if e.get("user") == username]
+    user_entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    return render_template("dashboard.html", entries=user_entries)
+
+
+@app.route("/admin")
+@login_required
+@admin_required
+def admin_dashboard():
+    """Admin area showing all calculations."""
+    entries = load_calculations()
+    entries.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+    return render_template("admin_dashboard.html", entries=entries)
 
 
 # --- Update module_page_submit function ---
@@ -978,7 +884,7 @@ def module_page_submit(module_id):
 @app.route("/calculate")
 def calculate():
     if "module_answers" not in session or not session["module_answers"]:
-        flash("No answers provided. Please start the questionnaire.", "warning")
+        flash("Bitte füllen Sie zuerst die Module aus.", "warning")
         return redirect(url_for("intro"))
 
     all_answers = session.get("module_answers", {})
@@ -1012,6 +918,7 @@ def calculate():
         all_detailed_answers[module_id_str] = current_detailed_answers
 
     # --- Map Raw Scores to Weighted Scores (using mapping function) ---
+    # (Keep existing logic)
     for module_id_str, raw_score in module_scores_raw.items():
         module_id = int(module_id_str)
         if module_id in all_modules:
@@ -1022,6 +929,7 @@ def calculate():
             module_scores_weighted[module_id_str] = 0.0
 
     # --- Calculate Final Total Score ---
+    # (Keep existing logic)
     final_total_score = 0
     which_module_contributed_m2_m3 = None
     m1_score = module_scores_weighted.get("1", 0.0)
@@ -1043,6 +951,7 @@ def calculate():
     final_total_score += m6_score
 
     # --- Determine Pflegegrad ---
+    # (Keep existing logic)
     pflegegrad = 0
     for grad, threshold in sorted(
         pflegegrad_thresholds.items(), key=lambda item: item[1]["min_points"]
@@ -1053,6 +962,7 @@ def calculate():
             break
 
     # --- Aggregate Notes ---
+    # (Keep existing logic)
     aggregated_notes = {
         mid: data.get("notes", "")
         for mid, data in all_answers.items()
@@ -1060,9 +970,21 @@ def calculate():
     }
 
     # --- Get Benefits Data ---
+    # (Keep existing logic - maybe add date check)
+    from datetime import date
+
+    today = date.today()
+    # Determine period based on date - adjust cutoff as needed
+    current_period_key = "period_2" if today >= date(today.year, 7, 1) else "period_1"
+    # Fallback if period key doesn't exist for some reason
     benefits_for_pg = pflegegrad_benefits.get(pflegegrad, {})
+    benefits = benefits_for_pg.get(current_period_key)
+    if not benefits:  # If current period missing, try the other one
+        fallback_period = "period_1" if current_period_key == "period_2" else "period_2"
+        benefits = benefits_for_pg.get(fallback_period, {})
 
     # --- Prepare results for template ---
+    # (Keep existing structure)
     results = {
         "final_total_score": round(final_total_score, 2),
         "pflegegrad": pflegegrad,
@@ -1071,44 +993,30 @@ def calculate():
         "which_module_contributed_m2_m3": which_module_contributed_m2_m3,
         "answers": all_detailed_answers,  # Pass detailed answers for display/PDF
         "notes": aggregated_notes,  # Pass aggregated notes
-        "benefits": benefits_for_pg,  # Pass all benefits data for the pflegegrad
+        "benefits": benefits,  # Pass benefits data
     }
 
-    # Store results in session for the result page
-    session["results"] = results
-    session.pop("module_answers", None)  # Clear module answers to reduce cookie size
-    session.pop("user_info", None)  # Clear user info to prevent stale data
+    session["results"] = results  # Keep storing in session if needed elsewhere
 
-    # Save calculation to JSON file if the user is authenticated
+    # Persist results if user is logged in
     if current_user.is_authenticated:
-        user_info = session.get("user_info", {})
-        new_calculation = {
-            "user_id": current_user.id,
-            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "berater_name": user_info.get("berater_name"),
-            "klient_name": user_info.get("client_name"),
+        entry = {
+            "user": current_user.username,
+            "timestamp": date.today().isoformat(),
+            "final_total_score": results["final_total_score"],
             "pflegegrad": results["pflegegrad"],
-            "results": results,  # Save the full results
         }
-        save_calculation(new_calculation)
+        save_calculation(entry)
 
-    # Redirect to the result page
-    return redirect(url_for("result_page"))
-
-
-@app.route("/result")
-def result_page():
-    """Displays the result page."""
-    results = session.get("results")
-    user_info = session.get("user_info")
-    if not results:
-        flash("No results found. Please start a new calculation.", "warning")
-        return redirect(url_for("intro"))
+    # Pass necessary variables to the template
     return render_template(
         "result.html",
         results=results,
-        user_info=user_info,
         all_modules=all_modules,
+        pflegegrad_thresholds=pflegegrad_thresholds,
+        user_info=session.get("user_info", {}),
+        # Add TOTAL_MODULES if used in result.html
+        # TOTAL_MODULES=TOTAL_MODULES
     )
 
 
@@ -1135,7 +1043,8 @@ pflegegrad_thresholds = {
 def generate_pdf():
     """
     Generates a PDF document based on the calculation results provided in the request body.
-    Handles M5 frequency, notes, benefits. Uses Unicode fonts.
+    Handles M5 frequency, notes, benefits. Uses updated FPDF2 syntax.
+    Includes type checking for pdf.output() result.
     """
     data = None
     try:
@@ -1163,18 +1072,9 @@ def generate_pdf():
         logo_url = "https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg"
 
         pdf = FPDF()
-        font_path = "dejavu-sans/ttf/"
-        pdf.add_font("DejaVu", "", f"{font_path}DejaVuSans.ttf", uni=True)
-        pdf.add_font("DejaVu", "B", f"{font_path}DejaVuSans-Bold.ttf", uni=True)
-        pdf.add_font("DejaVu", "I", f"{font_path}DejaVuSans-Oblique.ttf", uni=True)
-        pdf.add_font("DejaVu", "BI", f"{font_path}DejaVuSans-BoldOblique.ttf", uni=True)
-
         usable_width = pdf.w - pdf.l_margin - pdf.r_margin
 
-        def check_page_break(pdf_obj, height_needed=10):
-            if pdf_obj.get_y() + height_needed > pdf_obj.page_break_trigger:
-                pdf_obj.add_page()
-
+        # Company Header
         # --- Cover Page ---
         pdf.add_page()
         try:
@@ -1182,13 +1082,36 @@ def generate_pdf():
         except Exception:
             pass  # Ignore logo errors
         pdf.ln(20)
-        pdf.set_font("DejaVu", "B", 20)
-        pdf.cell(usable_width, 12, "Optimum Pflegeberatung", ln=1, align="C")
-        pdf.set_font("DejaVu", "", 14)
-        pdf.cell(usable_width, 10, "Pflegegrad Management Service", ln=1, align="C")
+        pdf.set_font("Arial", "B", 20)
+        pdf.cell(
+            usable_width,
+            12,
+            "Optimum Pflegeberatung".encode("latin-1", "replace").decode("latin-1"),
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+            align="C",
+        )
+        pdf.set_font("Arial", "", 14)
+        pdf.cell(
+            usable_width,
+            10,
+            "Pflegegrad Management Service".encode("latin-1", "replace").decode(
+                "latin-1"
+            ),
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+            align="C",
+        )
         pdf.ln(60)
-        pdf.set_font("DejaVu", "B", 16)
-        pdf.cell(usable_width, 10, "Ergebnisbericht", ln=1, align="C")
+        pdf.set_font("Arial", "B", 16)
+        pdf.cell(
+            usable_width,
+            10,
+            "Ergebnisbericht".encode("latin-1", "replace").decode("latin-1"),
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+            align="C",
+        )
 
         # --- Info Page ---
         pdf.add_page()
@@ -1197,67 +1120,180 @@ def generate_pdf():
         except Exception:
             pass
         pdf.ln(10)
-        pdf.set_font("DejaVu", "B", 20)
-        pdf.multi_cell(usable_width, 8, "Optimum Pflegeberatung", align="C")
-        pdf.set_font("DejaVu", "", 10)
-        pdf.multi_cell(usable_width, 5, "Verena Campbell - Pflegeberaterin", align="C")
-        pdf.multi_cell(usable_width, 5, "verena.campbell@optimum-pflegeberatung.de", align="C")
+        pdf.set_font("Arial", "B", 14)
+        pdf.multi_cell(
+            usable_width,
+            8,
+            "Optimum Pflegeberatung".encode("latin-1", "replace").decode("latin-1"),
+            align="C",
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+        )
+        pdf.set_font("Arial", size=10)
+        pdf.multi_cell(
+            usable_width,
+            5,
+            "Verena Campbell - Pflegeberaterin".encode("latin-1", "replace").decode(
+                "latin-1"
+            ),
+            align="C",
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+        )
+        pdf.multi_cell(
+            usable_width,
+            5,
+            "verena.campbell@optimum-pflegeberatung.de".encode(
+                "latin-1", "replace"
+            ).decode("latin-1"),
+            align="C",
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+        )
         pdf.ln(5)
 
         # --- Summary ---
-        pdf.set_font("DejaVu", "B", 12)
-        pdf.cell(usable_width, 8, "Zusammenfassung", ln=1)
-        pdf.set_font("DejaVu", "", 12)
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(
+            usable_width,
+            8,
+            "Zusammenfassung".encode("latin-1", "replace").decode("latin-1"),
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+        )
+        pdf.set_font("Arial", size=12)
         score_text = f"Gesamtpunktzahl (fuer Pflegegrad): {final_total_score:.2f}"
-        pdf.cell(usable_width, 8, score_text, ln=1)
+        pdf.cell(
+            usable_width,
+            8,
+            score_text.encode("latin-1", "replace").decode("latin-1"),
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+        )
         pg_text = (
             f"Ermittelter Pflegegrad: {pflegegrad}"
             if pflegegrad > 0
             else "Ermittelter Pflegegrad: Kein Pflegegrad (unter 12.5 Punkte)"
         )
-        pdf.cell(usable_width, 8, pg_text, ln=1)
+        pdf.cell(
+            usable_width,
+            8,
+            pg_text.encode("latin-1", "replace").decode("latin-1"),
+            new_x=XPos.LMARGIN,
+            new_y=YPos.NEXT,
+        )
         pdf.ln(5)
 
         # User / Client Information
         if user_info:
-            pdf.set_font("DejaVu", "B", 12)
-            pdf.cell(usable_width, 8, "Daten", ln=1)
-            pdf.set_font("DejaVu", "", 10)
-            for key, label in [
-                ("berater_name", "Pflegeberater/in"),
-                ("client_name", "Klient/in"),
-                ("insurance_number", "Krankenversicherungsnummer"),
-                ("dob", "Geburtsdatum"),
-                ("address", "Adresse"),
-                ("phone", "Telefon"),
-            ]:
-                value = user_info.get(key)
-                if value:
-                    check_page_break(pdf, 8)
-                    pdf.cell(usable_width, 5, f"{label}: {value}", ln=1)
+            pdf.set_font("Arial", "B", 12)
+            pdf.cell(
+                usable_width,
+                8,
+                "Daten".encode("latin-1", "replace").decode("latin-1"),
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
+            )
+            pdf.set_font("Arial", size=10)
+            if user_info.get("berater_name"):
+                pdf.cell(
+                    usable_width,
+                    5,
+                    f"Pflegeberater/in: {user_info.get('berater_name')}".encode(
+                        "latin-1", "replace"
+                    ).decode("latin-1"),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
+            if user_info.get("client_name"):
+                pdf.cell(
+                    usable_width,
+                    5,
+                    f"Klient/in: {user_info.get('client_name')}".encode(
+                        "latin-1", "replace"
+                    ).decode("latin-1"),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
+            if user_info.get("insurance_number"):
+                pdf.cell(
+                    usable_width,
+                    5,
+                    f"Krankenversicherungsnummer: {user_info.get('insurance_number')}".encode(
+                        "latin-1", "replace"
+                    ).decode(
+                        "latin-1"
+                    ),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
+            if user_info.get("dob"):
+                pdf.cell(
+                    usable_width,
+                    5,
+                    f"Geburtsdatum: {user_info.get('dob')}".encode(
+                        "latin-1", "replace"
+                    ).decode("latin-1"),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
+            if user_info.get("address"):
+                pdf.cell(
+                    usable_width,
+                    5,
+                    f"Adresse: {user_info.get('address')}".encode(
+                        "latin-1", "replace"
+                    ).decode("latin-1"),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
+            if user_info.get("phone"):
+                pdf.cell(
+                    usable_width,
+                    5,
+                    f"Telefon: {user_info.get('phone')}".encode(
+                        "latin-1", "replace"
+                    ).decode("latin-1"),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
             pdf.ln(5)
 
         # --- Benefits Display ---
         if benefits_data and benefits_data.get("leistungen"):
-            pdf.set_font("DejaVu", "B", 12)
+            pdf.set_font("Arial", "B", 12)
             benefit_title = f"Wichtige Leistungen bei Pflegegrad {pflegegrad}"
             date_range = benefits_data.get("date_range")
             if date_range:
                 benefit_title += f" ({date_range})"
-            check_page_break(pdf, 10)
-            pdf.cell(usable_width, 10, benefit_title, ln=1)
-            pdf.set_font("DejaVu", "", 10)
+            pdf.cell(
+                usable_width,
+                10,
+                benefit_title.encode("latin-1", "replace").decode("latin-1"),
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
+            )
+            pdf.set_font("Arial", size=10)
             for item_dict in benefits_data.get("leistungen", []):
                 item_name = item_dict.get("name", "")
                 item_value = item_dict.get("value", "")
-                check_page_break(pdf, 6)
-                pdf.multi_cell(usable_width, 6, f"- {item_name}: {item_value}")
+                pdf.multi_cell(
+                    usable_width,
+                    6,
+                    f"- {item_name}: {item_value}".encode("latin-1", "replace").decode(
+                        "latin-1"
+                    ),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
             pdf.ln(5)
 
         module_answers_all = detailed_results.get("answers", {})
         module_scores_raw = detailed_results.get("module_scores_raw", {})
         module_scores_weighted = detailed_results.get("module_scores_weighted", {})
-        which_module_contributed = detailed_results.get("which_module_contributed_m2_m3")
+        which_module_contributed = detailed_results.get(
+            "which_module_contributed_m2_m3"
+        )
 
         if isinstance(module_answers_all, dict):
             for module_id_str in sorted(
@@ -1274,32 +1310,68 @@ def generate_pdf():
                     continue
 
                 pdf.add_page()
-                pdf.set_font("DejaVu", "B", 14)
+                pdf.set_font("Arial", "B", 14)
                 module_name = module_info.get("name", f"Modul {module_id}")
-                pdf.multi_cell(usable_width, 10, f"Modul {module_id}: {module_name}")
-                pdf.set_font("DejaVu", "", 11)
+                pdf.multi_cell(
+                    usable_width,
+                    10,
+                    f"Modul {module_id}: {module_name}".encode(
+                        "latin-1", "replace"
+                    ).decode("latin-1"),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
+                pdf.set_font("Arial", size=11)
 
                 raw_score = module_scores_raw.get(module_id_str, 0.0)
                 weighted_score = module_scores_weighted.get(module_id_str, 0.0)
 
-                pdf.cell(usable_width, 6, f"Rohpunkte: {float(raw_score):.1f}", ln=1)
-                pdf.cell(usable_width, 6, f"Gewichtete Punkte: {float(weighted_score):.2f}", ln=1)
+                pdf.cell(
+                    usable_width,
+                    6,
+                    f"Rohpunkte: {float(raw_score):.1f}".encode(
+                        "latin-1", "replace"
+                    ).decode("latin-1"),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
+                pdf.cell(
+                    usable_width,
+                    6,
+                    f"Gewichtete Punkte: {float(weighted_score):.2f}".encode(
+                        "latin-1", "replace"
+                    ).decode("latin-1"),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
 
-                if module_id in [2, 3]:
+                if module_id_str in ["2", "3"]:
                     note_text = "(Nicht fuer Gesamtpunktzahl beruecksichtigt)"
                     if (
                         which_module_contributed is not None
                         and module_id == which_module_contributed
                     ):
                         note_text = "(Dieser Wert zaehlt fuer die Gesamtpunktzahl)"
-                    pdf.set_font("DejaVu", "I", 9)
-                    pdf.cell(usable_width, 5, note_text, ln=1)
-                    pdf.set_font("DejaVu", "", 11)
+                    pdf.set_font("Arial", "I", 9)
+                    pdf.cell(
+                        usable_width,
+                        5,
+                        note_text.encode("latin-1", "replace").decode("latin-1"),
+                        new_x=XPos.LMARGIN,
+                        new_y=YPos.NEXT,
+                    )
+                    pdf.set_font("Arial", size=11)
 
                 pdf.ln(2)
-                pdf.set_font("DejaVu", "B", 12)
-                pdf.cell(usable_width, 6, "Antworten:", ln=1)
-                pdf.set_font("DejaVu", "", 11)
+                pdf.set_font("Arial", "B", 12)
+                pdf.cell(
+                    usable_width,
+                    6,
+                    "Antworten:".encode("latin-1", "replace").decode("latin-1"),
+                    new_x=XPos.LMARGIN,
+                    new_y=YPos.NEXT,
+                )
+                pdf.set_font("Arial", size=11)
 
                 if isinstance(module_answers, dict) and module_answers:
                     try:
@@ -1326,79 +1398,137 @@ def generate_pdf():
                                 idx = int(q_key)
                                 if idx < len(questions):
                                     question_id = questions[idx].get("id")
-                            module_text = f"{question_id} {q_text}"
+                            elif module_id == 5:
+                                question_id = q_key
+
+                            if question_id:
+                                q_text = f"{question_id} {q_text}"
 
                             if answer_data.get("type") == "frequency":
                                 count = answer_data.get("count", "N/A")
                                 unit = answer_data.get("unit", "N/A")
-                                a_text = f"{count} mal pro {unit}"
+                                full_text = f"- {q_text}: {count}x pro {unit} ({a_score} Rohpunkte)"
+                            else:
+                                full_text = (
+                                    f"- {q_text}: {a_text} ({a_score} Rohpunkte)"
+                                )
 
-                            check_page_break(pdf, 10)
-                            pdf.set_font("DejaVu", "B", 10)
-                            pdf.multi_cell(usable_width, 5, module_text)
-                            pdf.set_font("DejaVu", "", 10)
-                            pdf.multi_cell(usable_width, 5, f"   Antwort: {a_text} (Punkte: {a_score})")
+                            pdf.multi_cell(
+                                usable_width,
+                                5,
+                                full_text.encode("latin-1", "replace").decode(
+                                    "latin-1"
+                                ),
+                                new_x=XPos.LMARGIN,
+                                new_y=YPos.NEXT,
+                            )
                             pdf.ln(1)
-                        elif isinstance(answer_data, str):
-                            # Handle answer as plain string (fallback)
-                            check_page_break(pdf, 10)
-                            pdf.set_font("DejaVu", "B", 10)
-                            pdf.multi_cell(usable_width, 5, f"Frage {q_key}")
-                            pdf.set_font("DejaVu", "", 10)
-                            pdf.multi_cell(usable_width, 5, f"   Antwort: {answer_data}")
-                            pdf.ln(1)
 
-                module_notes = module_answers.get("notes", "")
-                if module_notes:
+                        else:
+                            pdf.multi_cell(
+                                usable_width,
+                                5,
+                                f"- Frage {q_key}: Ungültige Antwortdaten".encode(
+                                    "latin-1", "replace"
+                                ).decode("latin-1"),
+                                new_x=XPos.LMARGIN,
+                                new_y=YPos.NEXT,
+                            )
+                else:
+                    pdf.cell(
+                        usable_width,
+                        5,
+                        "- Keine Antworten fuer dieses Modul vorhanden.".encode(
+                            "latin-1", "replace"
+                        ).decode("latin-1"),
+                        new_x=XPos.LMARGIN,
+                        new_y=YPos.NEXT,
+                    )
+
+                # Display Notes for Module
+                module_note = notes_data.get(module_id_str, "")
+                if module_note:
                     pdf.ln(2)
-                    pdf.set_font("DejaVu", "B", 11)
-                    pdf.multi_cell(usable_width, 6, "Notizen zum Modul:")
-                    pdf.set_font("DejaVu", "", 10)
-                    pdf.multi_cell(usable_width, 5, module_notes)
-                    pdf.ln(2)
+                    pdf.set_font("Arial", "B", 10)
+                    pdf.cell(
+                        usable_width,
+                        6,
+                        "Notizen:".encode("latin-1", "replace").decode("latin-1"),
+                        new_x=XPos.LMARGIN,
+                        new_y=YPos.NEXT,
+                    )
+                    pdf.set_font("Arial", size=11)
+                    pdf.multi_cell(
+                        usable_width,
+                        5,
+                        module_note.encode("latin-1", "replace").decode("latin-1"),
+                        new_x=XPos.LMARGIN,
+                        new_y=YPos.NEXT,
+                    )
 
-        # --- Aggregated Notes Section ---
-        if notes_data:
-            pdf.add_page()
-            pdf.set_font("DejaVu", "B", 14)
-            pdf.cell(usable_width, 10, "Zusätzliche Notizen", ln=1)
-            pdf.set_font("DejaVu", "", 11)
-            pdf.ln(5)
-
-            sorted_notes_keys = sorted(
-                notes_data.keys(), key=lambda k: int(k) if k.isdigit() else 999
+                pdf.ln(4)
+        else:
+            pdf.set_font("Arial", "I", 10)
+            pdf.multi_cell(
+                usable_width,
+                6,
+                "Fehler: Detaillierte Antworten konnten nicht geladen werden.".encode(
+                    "latin-1", "replace"
+                ).decode("latin-1"),
+                new_x=XPos.LMARGIN,
+                new_y=YPos.NEXT,
             )
 
-            for module_id_str in sorted_notes_keys:
-                if not module_id_str.isdigit():
-                    continue
-                module_id = int(module_id_str)
-                module_info = all_modules.get(module_id)
-                if not module_info:
-                    continue
+        # --- Output the PDF ---
+        # pdf.output() should return bytes. Add checks and conversion.
+        pdf_data = pdf.output()
+        current_app.logger.info(
+            f"Type returned by pdf.output(): {type(pdf_data)}"
+        )  # Log the type
 
-                note_text = notes_data[module_id_str]
-                if note_text:
-                    module_name = module_info.get("name", f"Modul {module_id}")
-                    check_page_break(pdf, 10)
-                    pdf.set_font("DejaVu", "B", 12)
-                    pdf.multi_cell(usable_width, 6, f"Modul {module_id}: {module_name}")
-                    pdf.set_font("DejaVu", "", 10)
-                    pdf.multi_cell(usable_width, 5, note_text)
-                    pdf.ln(3)
+        # Ensure it's bytes before returning
+        if isinstance(pdf_data, bytes):
+            pdf_output_bytes = pdf_data
+        elif isinstance(pdf_data, bytearray):
+            pdf_output_bytes = bytes(pdf_data)  # Convert bytearray to bytes
+        else:
+            # This case should ideally not happen with modern fpdf2
+            current_app.logger.error(
+                f"pdf.output() returned unexpected type: {type(pdf_data)}. Attempting encoding."
+            )
+            # Fallback: try encoding if it's somehow a string (less likely)
+            try:
+                pdf_output_bytes = str(pdf_data).encode("latin-1", "replace")
+            except Exception as enc_err:
+                current_app.logger.error(
+                    f"Fallback encoding failed: {enc_err}", exc_info=True
+                )
+                # Raise an error that will be caught by the outer try/except
+                raise ValueError("Failed to get PDF output as bytes")
 
-        # Output PDF to bytes
-        pdf_output = pdf.output(dest='S').encode("latin-1")
+        # Log the type *after* potential conversion
+        current_app.logger.info(
+            f"Type being passed to Response: {type(pdf_output_bytes)}"
+        )
 
-        # Return PDF as response
-        response = make_response(pdf_output)
-        response.headers.set('Content-Type', 'application/pdf')
-        response.headers.set('Content-Disposition', 'attachment', filename='pflegegrad_report.pdf')
-        return response
+        return Response(
+            pdf_output_bytes,  # Pass the verified/converted bytes
+            mimetype="application/pdf",
+            headers={
+                "Content-Disposition": "attachment;filename=pflegegrad_results.pdf"
+            },
+        )
 
     except Exception as e:
         current_app.logger.error(f"Error generating PDF: {e}", exc_info=True)
-        return jsonify({"error": "Failed to generate PDF."}), 500
+        return (
+            jsonify(
+                {
+                    "error": f"An internal server error occurred during PDF generation: {e}"
+                }
+            ),
+            500,
+        )
 
 
 @app.errorhandler(404)
@@ -1411,46 +1541,13 @@ def handle_404(error):
 @app.errorhandler(500)
 def handle_500(error):
     """Return a generic 500 page while logging the exception."""
-    app.logger.error(f"Server Error: {error}", exc_info=True)
+    current_app.logger.error(f"500 Internal Server Error: {error}", exc_info=True)
     return render_template("500.html"), 500
 
 
-# --- Application Initialization ---
-# This block runs when the application starts.
-# It creates database tables and the initial admin user if they don't exist.
-try:
-    with app.app_context():
-        db.create_all()
-        # Check for and create admin user from .env
-        admin_user = os.environ.get("ADMIN_USER")
-        admin_email = os.environ.get("ADMIN_EMAIL")
-        admin_password = os.environ.get("ADMIN_PASSWORD")
-
-        if admin_user and admin_email and admin_password:
-            # Check if admin already exists
-            existing_admin = User.query.filter(
-                (User.username == admin_user) | (User.email == admin_email)
-            ).first()
-            if not existing_admin:
-                hashed_password = generate_password_hash(admin_password)
-                new_admin = User(
-                    username=admin_user,
-                    email=admin_email,
-                    password_hash=hashed_password,
-                    name="Admin",
-                    vorname="User",
-                    gdpr_consent=True,  # Implied consent for admin
-                    role="admin",
-                )
-                db.session.add(new_admin)
-                db.session.commit()
-                print(f"Admin user '{admin_user}' created.")
-        print("Database tables created/checked successfully.")
-except Exception as e:
-    print(f"Error during database initialization: {e}")
-
+# ... (rest of app.py, including if __name__ == '__main__':) ...
+# ... (rest of app.py, including if __name__ == '__main__':) ...
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
-
+    app.run(debug=True, port=5000)
     
