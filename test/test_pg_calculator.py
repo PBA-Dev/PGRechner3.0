@@ -39,3 +39,4 @@ def test_calculate_pflegerad():
     result = calculate_pflegerad(raw_scores)
     assert result["total_score"] == pytest.approx(61.25)
     assert result["pflegegrad"] == 3
+    

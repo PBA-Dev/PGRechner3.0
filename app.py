@@ -60,13 +60,9 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 db = SQLAlchemy(app)
 
-
 load_dotenv(dotenv_path=".env")
 
-
 mail = Mail(app)
-
-
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
@@ -1158,17 +1154,17 @@ def generate_pdf():
         pflegegrad = int(data.get("pflegegrad", 0))
         benefits_data = data.get("benefits", {})
         notes_data = data.get("notes", {})  # Aggregated notes { '1': 'note', ... }
-        user_info = data.get("user_info", {})
+        user_info = data.get("user_info") or {}
 
         # --- PDF Generation Logic ---
         logo_url = "https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg"
 
         pdf = FPDF()
-        font_path = "dejavu-sans/ttf/"
-        pdf.add_font("DejaVu", "", f"{font_path}DejaVuSans.ttf", uni=True)
-        pdf.add_font("DejaVu", "B", f"{font_path}DejaVuSans-Bold.ttf", uni=True)
-        pdf.add_font("DejaVu", "I", f"{font_path}DejaVuSans-Oblique.ttf", uni=True)
-        pdf.add_font("DejaVu", "BI", f"{font_path}DejaVuSans-BoldOblique.ttf", uni=True)
+        font_dir = os.path.join(os.path.dirname(__file__), "dejavu-sans", "ttf")
+        pdf.add_font("DejaVu", "", os.path.join(font_dir, "DejaVuSans.ttf"), uni=True)
+        pdf.add_font("DejaVu", "B", os.path.join(font_dir, "DejaVuSans-Bold.ttf"), uni=True)
+        pdf.add_font("DejaVu", "I", os.path.join(font_dir, "DejaVuSans-Oblique.ttf"), uni=True)
+        pdf.add_font("DejaVu", "BI", os.path.join(font_dir, "DejaVuSans-BoldOblique.ttf"), uni=True)
 
         usable_width = pdf.w - pdf.l_margin - pdf.r_margin
 
@@ -1388,13 +1384,17 @@ def generate_pdf():
                     pdf.multi_cell(usable_width, 5, note_text)
                     pdf.ln(3)
 
-        pdf_output = pdf.output(dest='S').encode('latin-1')
+        pdf_output = pdf.output(dest="S")
+        if not isinstance(pdf_output, (bytes, bytearray)):
+            pdf_output = pdf_output.encode("latin-1")
+        else:
+            pdf_output = bytes(pdf_output)
 
         # Determine filename using client name if available
-        client_name = user_info.get('client_name', '').strip()
+        client_name = user_info.get("client_name", "").strip()
         if client_name:
             safe_name = secure_filename(client_name)
-            filename = f'pflegegrad_report_{safe_name}.pdf'
+            filename = f"pflegegrad_report_{safe_name}.pdf"
         else:
             filename = 'pflegegrad_report.pdf'
 
@@ -1460,5 +1460,3 @@ except Exception as e:
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
-
-    

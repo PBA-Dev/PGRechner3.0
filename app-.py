@@ -1066,7 +1066,7 @@ def generate_pdf():
         pflegegrad = int(data.get("pflegegrad", 0))
         benefits_data = data.get("benefits", {})
         notes_data = data.get("notes", {})  # Aggregated notes { '1': 'note', ... }
-        user_info = data.get("user_info", {})
+        user_info = data.get("user_info") or {}
 
         # --- PDF Generation Logic ---
         logo_url = "https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg"
