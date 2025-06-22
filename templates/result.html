@@ -294,14 +294,24 @@
                         throw new Error(`PDF Generation Failed: ${response.statusText} (Status: ${response.status})`);
                     });
                 }
-                return response.blob(); // Expecting PDF blob
+
+                // Extract filename from Content-Disposition header if provided
+                const disposition = response.headers.get('Content-Disposition') || '';
+                let filename = 'pflegegrad_report.pdf';
+                const match = disposition.match(/filename=([^;]+)/i);
+                if (match && match[1]) {
+                    filename = match[1].replace(/['"]/g, '').trim();
+                }
+
+                // Return blob and filename
+                return response.blob().then(blob => ({ blob, filename }));
             })
-            .then(blob => {
+            .then(({ blob, filename }) => {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.style.display = 'none';
                 a.href = url;
-                a.download = 'pflegegrad_results.pdf';
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url); // Clean up

@@ -66,6 +66,24 @@ mail = Mail(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
+
+
+class ReportPDF(FPDF):
+    """Custom PDF class with header for Optimum Pflegeberatung."""
+
+    def header(self):
+        """Draw logo and company name on each page."""
+        logo_url = (
+            "https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg"
+        )
+        try:
+            self.image(logo_url, x=10, y=8, h=10)
+        except Exception:
+            pass
+        self.set_font("Helvetica", "B", 12)
+        self.cell(0, 10, "Optimum Pflegeberatung", align="R")
+        self.ln(15)
+
 DATA_FILE = os.path.join(os.path.dirname(__file__), "data", "calculations.json")
 
 
@@ -1072,13 +1090,14 @@ def calculate():
     }
 
     # Store results in session for the result page
+    user_info = session.get("user_info", {})
+    results["user_info"] = user_info
     session["results"] = results
     session.pop("module_answers", None)  # Clear module answers to reduce cookie size
-    session.pop("user_info", None)  # Clear user info to prevent stale data
+    session.pop("user_info", None)  # Clear user info now that it's stored in results
 
     # Save calculation to JSON file if the user is authenticated
-    if current_user.is_authenticated:
-        user_info = session.get("user_info", {})
+    if current_user.is_authenticated:       
         new_calculation = {
             "user_id": current_user.id,
             "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -1098,6 +1117,8 @@ def result_page():
     """Displays the result page."""
     results = session.get("results")
     user_info = session.get("user_info")
+    if not user_info and results:
+        user_info = results.get("user_info")
     if not results:
         flash("No results found. Please start a new calculation.", "warning")
         return redirect(url_for("intro"))
@@ -1159,7 +1180,7 @@ def generate_pdf():
         # --- PDF Generation Logic ---
         logo_url = "https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg"
 
-        pdf = FPDF()
+        pdf = ReportPDF()
         font_dir = os.path.join(os.path.dirname(__file__), "dejavu-sans", "ttf")
         pdf.add_font("DejaVu", "", os.path.join(font_dir, "DejaVuSans.ttf"), uni=True)
         pdf.add_font("DejaVu", "B", os.path.join(font_dir, "DejaVuSans-Bold.ttf"), uni=True)
@@ -1167,6 +1188,7 @@ def generate_pdf():
         pdf.add_font("DejaVu", "BI", os.path.join(font_dir, "DejaVuSans-BoldOblique.ttf"), uni=True)
 
         usable_width = pdf.w - pdf.l_margin - pdf.r_margin
+        content_width = usable_width - 20
 
         def check_page_break(pdf_obj, height_needed=10):
             if pdf_obj.get_y() + height_needed > pdf_obj.page_break_trigger:
@@ -1186,6 +1208,13 @@ def generate_pdf():
         pdf.ln(60)
         pdf.set_font("DejaVu", "B", 16)
         pdf.cell(usable_width, 10, "Ergebnisbericht", ln=1, align="C")
+
+        client_name = (user_info or {}).get("client_name")
+        if client_name:
+            pdf.set_font("DejaVu", "", 12)
+            date_str = datetime.now().strftime("%d.%m.%Y")
+            pdf.cell(usable_width, 8, f"f\xfcr {client_name} am {date_str}", ln=1, align="C")
+
 
         # --- Info Page ---
         pdf.add_page()
@@ -1283,8 +1312,12 @@ def generate_pdf():
                 raw_score = module_scores_raw.get(module_id_str, 0.0)
                 weighted_score = module_scores_weighted.get(module_id_str, 0.0)
 
-                pdf.cell(usable_width, 6, f"Rohpunkte: {float(raw_score):.1f}", ln=1)
-                pdf.cell(usable_width, 6, f"Gewichtete Punkte: {float(weighted_score):.2f}", ln=1)
+                pdf.set_x(pdf.l_margin)
+                pdf.multi_cell(content_width, 6, f"Gewichtete Punkte: {float(weighted_score):.2f}")
+                pdf.set_x(pdf.l_margin)
+                pdf.multi_cell(content_width, 6, f"Rohpunkte: {float(raw_score):.1f}")
+                pdf.ln(2)
+
 
                 if module_id in [2, 3]:
                     note_text = "(Nicht fuer Gesamtpunktzahl beruecksichtigt)"
@@ -1337,17 +1370,19 @@ def generate_pdf():
                             check_page_break(pdf, 10)
                             pdf.set_font("DejaVu", "B", 10)
                             pdf.multi_cell(content_width, 5, module_text)
-                            pdf.set_font("DejaVu", "", 10)
-                            pdf.multi_cell(content_width, 5, f"   Antwort: {a_text} (Punkte: {a_score})")
                             pdf.ln(1)
+                            pdf.set_font("DejaVu", "", 10)
+                            pdf.multi_cell(content_width, 5, f"Antwort: {a_text} (Punkte: {a_score})")
+                            pdf.ln(2)
                         elif isinstance(answer_data, str):
                             # Handle answer as plain string (fallback)
                             check_page_break(pdf, 10)
                             pdf.set_font("DejaVu", "B", 10)
                             pdf.multi_cell(content_width, 5, f"Frage {q_key}")
-                            pdf.set_font("DejaVu", "", 10)
-                            pdf.multi_cell(content_width, 5, f"   Antwort: {answer_data}")
                             pdf.ln(1)
+                            pdf.set_font("DejaVu", "", 10)
+                            pdf.multi_cell(content_width, 5, f"Antwort: {answer_data}")
+                            pdf.ln(2)
 
                 module_notes = module_answers.get("notes", "")
                 if module_notes:
@@ -1387,6 +1422,25 @@ def generate_pdf():
                     pdf.set_font("DejaVu", "", 10)
                     pdf.multi_cell(usable_width, 5, note_text)
                     pdf.ln(3)
+
+                # --- Benefits Summary at End ---
+        if benefits_data and benefits_data.get("leistungen"):
+            pdf.add_page()
+            pdf.set_font("DejaVu", "B", 12)
+            benefit_title = f"Wichtige Leistungen bei Pflegegrad {pflegegrad}"
+            date_range = benefits_data.get("date_range")
+            if date_range:
+                benefit_title += f" ({date_range})"
+            check_page_break(pdf, 10)
+            pdf.cell(usable_width, 10, benefit_title, ln=1)
+            pdf.set_font("DejaVu", "", 10)
+            for item_dict in benefits_data.get("leistungen", []):
+                item_name = item_dict.get("name", "")
+                item_value = item_dict.get("value", "")
+                check_page_break(pdf, 6)
+                pdf.multi_cell(usable_width, 6, f"- {item_name}: {item_value}")
+            pdf.ln(5)
+
 
         pdf_output = pdf.output(dest="S")
         if not isinstance(pdf_output, (bytes, bytearray)):
