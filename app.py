@@ -1437,21 +1437,50 @@ def generate_pdf():
                     pdf.ln(3)
 
                 # --- Benefits Summary at End ---
-        for period in benefits_periods:
+        if benefits_periods:
             pdf.add_page()
             pdf.set_font("DejaVu", "B", 12)
-            benefit_title = f"Wichtige Leistungen bei Pflegegrad {pflegegrad}"
-            date_range = period.get("date_range")
-            if date_range:
-                benefit_title += f" ({date_range})"
-            pdf.cell(usable_width, 10, benefit_title, ln=1)
-            pdf.set_font("DejaVu", "", 10)
-            for item in period.get("leistungen", []):
-                item_name = item.get("name", "")
-                item_value = item.get("value", "")
-                check_page_break(pdf, 6)
-                pdf.multi_cell(usable_width, 6, f"- {item_name}: {item_value}")
-            pdf.ln(5)
+            pdf.cell(
+                usable_width,
+                10,
+                f"Wichtige Leistungen bei Pflegegrad {pflegegrad}",
+                ln=1,
+            )
+            pdf.ln(2)
+
+            # Each period of benefits is printed in its own column on this page
+            col_width = usable_width / len(benefits_periods)
+            start_y = pdf.get_y()
+            start_x = pdf.l_margin
+            column_bottoms = []
+
+            for idx, period in enumerate(benefits_periods):
+                x = start_x + idx * col_width
+                y = start_y
+                pdf.set_xy(x, y)
+                pdf.set_font("DejaVu", "B", 11)
+                date_range = period.get("date_range", "")
+                if date_range:
+                    check_page_break(pdf, 6)
+                    y = pdf.get_y()
+                    pdf.set_xy(x, y)
+                    pdf.multi_cell(col_width, 6, date_range)
+                    y = pdf.get_y()
+
+                pdf.set_font("DejaVu", "", 10)
+                for item in period.get("leistungen", []):
+                    item_name = item.get("name", "")
+                    item_value = item.get("value", "")
+                    pdf.set_xy(x, y)
+                    check_page_break(pdf, 6)
+                    y = pdf.get_y()
+                    pdf.set_xy(x, y)
+                    pdf.multi_cell(col_width, 6, f"- {item_name}: {item_value}")
+                    y = pdf.get_y()
+
+                column_bottoms.append(y)
+
+            pdf.set_y(max(column_bottoms) + 5)
 
 
         pdf_output = pdf.output(dest="S")
