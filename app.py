@@ -589,14 +589,21 @@ def intro():
 @app.route("/dashboard")
 @login_required
 def dashboard():
+    search_query = request.args.get("q", "").strip().lower()
     user_calculations = []
     all_calculations = load_calculations()
     if current_user.is_authenticated:
-        for calc in all_calculations:
+        for idx, calc in enumerate(all_calculations):
             if calc.get("user_id") == current_user.id:
-                user_calculations.append(calc)
-    return render_template("dashboard.html", calculations=user_calculations)
-
+                if not search_query or search_query in str(calc.get("klient_name", "")).lower():
+                    calc_entry = dict(calc)
+                    calc_entry["index"] = idx
+                    user_calculations.append(calc_entry)
+    return render_template(
+        "dashboard.html",
+        calculations=user_calculations,
+        search_query=search_query,
+    )
 
 @app.route("/admin")
 @login_required
@@ -1145,6 +1152,33 @@ def result_page():
         all_modules=all_modules,
     )
 
+@app.route("/calculation/<int:index>")
+@login_required
+def view_saved_calculation(index):
+    """Display a previously saved calculation."""
+    calculations = load_calculations()
+    if index < 0 or index >= len(calculations):
+        flash("Berechnung nicht gefunden.", "warning")
+        return redirect(url_for("dashboard"))
+
+    calc = calculations[index]
+    if calc.get("user_id") != current_user.id and current_user.role != "admin":
+        flash("Zugriff verweigert.", "danger")
+        return redirect(url_for("dashboard"))
+
+    results = calc.get("results")
+    user_info = None
+    if isinstance(results, dict):
+        user_info = results.get("user_info")
+
+    return render_template(
+        "result.html",
+        results=results,
+        user_info=user_info,
+        all_modules=all_modules,
+    )
+
+
 
 # Ensure pflegegrad_thresholds is defined or imported
 pflegegrad_thresholds = {
@@ -1328,7 +1362,7 @@ def generate_pdf():
                 pdf.set_x(pdf.l_margin)
                 pdf.multi_cell(content_width, 6, f"Gewichtete Punkte: {float(weighted_score):.2f}")
                 pdf.set_x(pdf.l_margin)
-                pdf.multi_cell(content_width, 6, f"Rohpunkte: {float(raw_score):.1f}")
+                pdf.multi_cell(content_width, 6, f"Einzelpunkte: {float(raw_score):.1f}")
                 pdf.ln(2)
 
 
@@ -1436,51 +1470,66 @@ def generate_pdf():
                     pdf.multi_cell(usable_width, 5, note_text)
                     pdf.ln(3)
 
-                # --- Benefits Summary at End ---
+        # --- Benefits Summary at End ---
         if benefits_periods:
             pdf.add_page()
-            pdf.set_font("DejaVu", "B", 12)
+            pdf.set_font("DejaVu", "B", 14)
             pdf.cell(
                 usable_width,
                 10,
                 f"Wichtige Leistungen bei Pflegegrad {pflegegrad}",
                 ln=1,
             )
-            pdf.ln(2)
+            pdf.ln(5)
 
-            # Each period of benefits is printed in its own column on this page
-            col_width = usable_width / len(benefits_periods)
-            start_y = pdf.get_y()
-            start_x = pdf.l_margin
-            column_bottoms = []
-
+            # Each period gets its own page now
             for idx, period in enumerate(benefits_periods):
-                x = start_x + idx * col_width
+                # Add a new page for the second period and onwards
+                if idx > 0:
+                    pdf.add_page()
+                    pdf.set_font("DejaVu", "B", 12)
+                    pdf.cell(
+                        usable_width,
+                        10,
+                        f"Wichtige Leistungen bei Pflegegrad {pflegegrad} (Fortsetzung)",
+                        ln=1,
+                    )
+                    pdf.ln(3)
+
+                # Use full width since we have one period per page
+                col_width = usable_width
+                start_y = pdf.get_y()
+                start_x = pdf.l_margin
+                
+                x = start_x
                 y = start_y
                 pdf.set_xy(x, y)
                 pdf.set_font("DejaVu", "B", 11)
                 date_range = period.get("date_range", "")
                 if date_range:
-                    check_page_break(pdf, 6)
+                    check_page_break(pdf, 8)
                     y = pdf.get_y()
                     pdf.set_xy(x, y)
-                    pdf.multi_cell(col_width, 6, date_range)
+                    pdf.multi_cell(col_width, 8, date_range)
+                    y = pdf.get_y()
+                    pdf.ln(3)  # Extra space after date range
                     y = pdf.get_y()
 
-                pdf.set_font("DejaVu", "", 10)
+                pdf.set_font("DejaVu", "", 12)
                 for item in period.get("leistungen", []):
                     item_name = item.get("name", "")
                     item_value = item.get("value", "")
                     pdf.set_xy(x, y)
-                    check_page_break(pdf, 6)
+                    check_page_break(pdf, 8)
                     y = pdf.get_y()
                     pdf.set_xy(x, y)
-                    pdf.multi_cell(col_width, 6, f"- {item_name}: {item_value}")
+                    pdf.multi_cell(col_width, 8, f"- {item_name}: {item_value}")
+                    y = pdf.get_y()
+                    pdf.ln(2)  # Extra space between benefit items
                     y = pdf.get_y()
 
-                column_bottoms.append(y)
+                pdf.set_y(y + 8)
 
-            pdf.set_y(max(column_bottoms) + 5)
 
 
         pdf_output = pdf.output(dest="S")
