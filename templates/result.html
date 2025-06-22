@@ -79,12 +79,12 @@
                     {% for period_key, period_data in results.benefits.items() %}
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="heading-{{ period_key }}">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                        data-bs-target="#collapse-{{ period_key }}">
-                                    Leistungen für den Zeitraum: {{ period_data.date_range }}
-                                </button>
-                            </h2>
-                            <div id="collapse-{{ period_key }}" class="accordion-collapse collapse" data-bs-parent="#benefitsAccordion">
+                                <button class="accordion-button {% if period_key != results.current_period_key %}collapsed{% endif %}" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapse-{{ period_key }}" aria-expanded="{{ 'true' if period_key == results.current_period_key else 'false' }}">
+                            Leistungen für den Zeitraum: {{ period_data.date_range }}
+                        </button>
+                    </h2>
+                    <div id="collapse-{{ period_key }}" class="accordion-collapse collapse{% if period_key == results.current_period_key %} show{% endif %}" data-bs-parent="#benefitsAccordion">                        
                                 <div class="accordion-body">
                                     <ul class="list-group list-group-flush">
                                         {% for item in period_data.leistungen %}
@@ -255,18 +255,19 @@
 
             // Prepare the payload EXACTLY as the backend /generate_pdf expects
             const payload = {
-                detailed_results: {
-                    answers: resultsData.answers || {},
-                    module_scores_raw: resultsData.module_scores_raw || {},
-                    module_scores_weighted: resultsData.module_scores_weighted || {},
-                    which_module_contributed_m2_m3: resultsData.which_module_contributed_m2_m3
-                },
-                final_total_score: resultsData.final_total_score,
-                pflegegrad: resultsData.pflegegrad,
-                notes: resultsData.notes || {}, // Pass aggregated notes
-                benefits: resultsData.benefits || {}, // Pass benefits data
-                user_info: userInfo
-            };
+                    detailed_results: {
+                        answers: resultsData.answers || {},
+                        module_scores_raw: resultsData.module_scores_raw || {},
+                        module_scores_weighted: resultsData.module_scores_weighted || {},
+                        which_module_contributed_m2_m3: resultsData.which_module_contributed_m2_m3
+                    },
+                    final_total_score: resultsData.final_total_score,
+                    pflegegrad: resultsData.pflegegrad,
+                    notes: resultsData.notes || {}, // Pass aggregated notes
+                    benefits: resultsData.benefits || {}, // Pass benefits data
+                    current_period_key: resultsData.current_period_key,
+                    user_info: userInfo
+                };
 
             console.log('Sending payload to /generate_pdf:', payload); // Debugging
 

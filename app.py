@@ -73,9 +73,8 @@ class ReportPDF(FPDF):
 
     def header(self):
         """Draw logo and company name on each page."""
-        logo_url = (
-            "https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg"
-        )
+        logo_url = "https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg"
+        
         try:
             self.image(logo_url, x=10, y=8, h=10)
         except Exception:
@@ -611,40 +610,53 @@ def admin_dashboard():
 
 
 class ChangePasswordForm(FlaskForm):
-    current_password = PasswordField('Current Password', validators=[DataRequired()])
-    new_password = PasswordField('New Password', validators=[DataRequired(), Length(min=6)])
-    confirm_new_password = PasswordField('Confirm New Password',
-                                         validators=[DataRequired(), EqualTo('new_password', message='Passwords must match.')])
-    submit = SubmitField('Change Password')
+    current_password = PasswordField("Current Password", validators=[DataRequired()])
+    new_password = PasswordField(
+        "New Password", validators=[DataRequired(), Length(min=6)]
+    )
+    confirm_new_password = PasswordField(
+        "Confirm New Password",
+        validators=[
+            DataRequired(),
+            EqualTo("new_password", message="Passwords must match."),
+        ],
+    )
+    submit = SubmitField("Change Password")
+
 
 class ResetPasswordRequestForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    submit = SubmitField('Request Password Reset')
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    submit = SubmitField("Request Password Reset")
+
 
 class ResetPasswordForm(FlaskForm):
-    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
-    confirm_password = PasswordField('Confirm Password',
-                                     validators=[DataRequired(), EqualTo('password')])
-    submit = SubmitField('Reset Password')
+    password = PasswordField("Password", validators=[DataRequired(), Length(min=6)])
+    confirm_password = PasswordField(
+        "Confirm Password", validators=[DataRequired(), EqualTo("password")]
+    )
+    submit = SubmitField("Reset Password")
+
 
 class EditProfileForm(FlaskForm):
-    name = StringField('Name', validators=[DataRequired()])
-    vorname = StringField('Vorname', validators=[DataRequired()])
-    phone_number = StringField('Telefon')
-    company = StringField('Firma')
-    submit = SubmitField('Speichern')
+    name = StringField("Name", validators=[DataRequired()])
+    vorname = StringField("Vorname", validators=[DataRequired()])
+    phone_number = StringField("Telefon")
+    company = StringField("Firma")
+    submit = SubmitField("Speichern")
 
 
 def send_reset_email(user):
     token = user.get_reset_token()
-    msg = Message('Password Reset Request',
-                  sender=app.config['MAIL_USERNAME'],
-                  recipients=[user.email])
-    msg.body = f'''To reset your password, visit the following link:
+    msg = Message(
+        "Password Reset Request",
+        sender=app.config["MAIL_USERNAME"],
+        recipients=[user.email],
+    )
+    msg.body = f"""To reset your password, visit the following link:
 {url_for('reset_token', token=token, _external=True)}
 
 If you did not make this request then simply ignore this email and no changes will be made.
-'''
+"""
     mail.send(msg)
 
 
@@ -1078,10 +1090,6 @@ def calculate():
     today = date.today()
     current_period_key = "period_2" if today >= date(today.year, 7, 1) else "period_1"
     benefits_for_pg = pflegegrad_benefits.get(pflegegrad, {})
-    benefits_selected = benefits_for_pg.get(current_period_key)
-    if not benefits_selected:
-        fallback_period = "period_1" if current_period_key == "period_2" else "period_2"
-        benefits_selected = benefits_for_pg.get(fallback_period, {})
 
 
     # --- Prepare results for template ---
@@ -1093,7 +1101,8 @@ def calculate():
         "which_module_contributed_m2_m3": which_module_contributed_m2_m3,
         "answers": all_detailed_answers,  # Pass detailed answers for display/PDF
         "notes": aggregated_notes,  # Pass aggregated notes
-        "benefits": benefits_selected,  # Pass benefits data for the current period
+        "benefits": benefits_for_pg,
+        "current_period_key": current_period_key,
     }
 
     # Store results in session for the result page
@@ -1104,7 +1113,7 @@ def calculate():
     session.pop("user_info", None)  # Clear user info now that it's stored in results
 
     # Save calculation to JSON file if the user is authenticated
-    if current_user.is_authenticated:       
+    if current_user.is_authenticated:
         new_calculation = {
             "user_id": current_user.id,
             "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -1176,16 +1185,29 @@ def generate_pdf():
             f"Successfully parsed JSON data for PDF generation. Keys: {list(data.keys())}"
         )
 
-        # --- Extract data safely ---
+       # --- Extract data safely ---
         detailed_results = data.get("detailed_results", {})
         final_total_score = float(data.get("final_total_score", 0.0))
         pflegegrad = int(data.get("pflegegrad", 0))
         benefits_data = data.get("benefits", {})
-        notes_data = data.get("notes", {})  # Aggregated notes { '1': 'note', ... }
+        current_period_key = data.get("current_period_key")
+        notes_data = data.get("notes", {})  # Aggregated notes { '1': 'note', .. }
         user_info = data.get("user_info") or {}
+        
+        benefits_periods = []
+        if isinstance(benefits_data, dict):
+            period_keys = [k for k in benefits_data if k.startswith("period_")]
+            if period_keys:
+                period_keys.sort(key=lambda k: int(k.split("_")[1]) if k.split("_")[1].isdigit() else 0)
+                for pk in period_keys:
+                    period_info = benefits_data.get(pk)
+                    if isinstance(period_info, dict):
+                        benefits_periods.append(period_info)
+            elif benefits_data.get("leistungen"):
+                benefits_periods.append(benefits_data)
 
         # --- PDF Generation Logic ---
-        logo_url = "https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg"
+        logo_url = "opb-logo-neu.webp"
 
         pdf = ReportPDF()
         font_dir = os.path.join(os.path.dirname(__file__), "dejavu-sans", "ttf")
@@ -1270,22 +1292,6 @@ def generate_pdf():
                     pdf.cell(usable_width, 5, f"{label}: {value}", ln=1)
             pdf.ln(5)
 
-        # --- Benefits Display ---
-        if benefits_data and benefits_data.get("leistungen"):
-            pdf.set_font("DejaVu", "B", 12)
-            benefit_title = f"Wichtige Leistungen bei Pflegegrad {pflegegrad}"
-            date_range = benefits_data.get("date_range")
-            if date_range:
-                benefit_title += f" ({date_range})"
-            check_page_break(pdf, 10)
-            pdf.cell(usable_width, 10, benefit_title, ln=1)
-            pdf.set_font("DejaVu", "", 10)
-            for item_dict in benefits_data.get("leistungen", []):
-                item_name = item_dict.get("name", "")
-                item_value = item_dict.get("value", "")
-                check_page_break(pdf, 6)
-                pdf.multi_cell(usable_width, 6, f"- {item_name}: {item_value}")
-            pdf.ln(5)
 
         module_answers_all = detailed_results.get("answers", {})
         module_scores_raw = detailed_results.get("module_scores_raw", {})
@@ -1431,19 +1437,18 @@ def generate_pdf():
                     pdf.ln(3)
 
                 # --- Benefits Summary at End ---
-        if benefits_data and benefits_data.get("leistungen"):
+        for period in benefits_periods:
             pdf.add_page()
             pdf.set_font("DejaVu", "B", 12)
             benefit_title = f"Wichtige Leistungen bei Pflegegrad {pflegegrad}"
-            date_range = benefits_data.get("date_range")
+            date_range = period.get("date_range")
             if date_range:
                 benefit_title += f" ({date_range})"
-            check_page_break(pdf, 10)
             pdf.cell(usable_width, 10, benefit_title, ln=1)
             pdf.set_font("DejaVu", "", 10)
-            for item_dict in benefits_data.get("leistungen", []):
-                item_name = item_dict.get("name", "")
-                item_value = item_dict.get("value", "")
+            for item in period.get("leistungen", []):
+                item_name = item.get("name", "")
+                item_value = item.get("value", "")
                 check_page_break(pdf, 6)
                 pdf.multi_cell(usable_width, 6, f"- {item_name}: {item_value}")
             pdf.ln(5)
