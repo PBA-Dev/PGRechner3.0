@@ -81,7 +81,12 @@ def format_eu_date(date_str):
 
 
 class ReportPDF(FPDF):
-    """Custom PDF class with header for Optimum Pflegeberatung."""
+    """Custom PDF class with header and footer for Optimum Pflegeberatung."""
+    
+    def __init__(self, client_name=None, insurance_number=None):
+        super().__init__()  # Call parent FPDF.__init__()
+        self.client_name = client_name or ""
+        self.insurance_number = insurance_number or ""
 
     def header(self):
         """Draw logo and company name on each page."""
@@ -92,8 +97,36 @@ class ReportPDF(FPDF):
         except Exception:
             pass
         self.set_font("Helvetica", "B", 12)
-        self.cell(0, 10, "Optimum Pflegeberatung", align="R")
+        #self.cell(0, 10, "Optimum Pflegeberatung", align="R")        
         self.ln(15)
+    
+    def footer(self):
+        """Draw footer with client name and insurance number."""
+        # Position at 15mm from bottom
+        self.set_y(-15)
+        
+        # Set font for footer
+        self.set_font("DejaVu", "", 9)
+        
+        # Create footer text
+        footer_parts = []
+        if self.client_name:
+            footer_parts.append(f"Klient/in: {self.client_name}")
+        if self.insurance_number:
+            footer_parts.append(f"VR#: {self.insurance_number}")
+        
+        footer_text = " | ".join(footer_parts) if footer_parts else ""
+        
+        # Add page number
+        page_text = f"Seite {self.page_no()}"
+        
+        # Left-aligned client info
+        if footer_text:
+            self.cell(0, 10, footer_text, 0, 0, "L")
+        
+        # Right-aligned page number
+        self.cell(0, 10, page_text, 0, 0, "R")
+
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), "data", "calculations.json")
 
@@ -609,7 +642,7 @@ def dashboard():
             if calc.get("user_id") == current_user.id:
                 if not search_query or search_query in str(calc.get("klient_name", "")).lower():
                     calc_entry = dict(calc)
-                    calc_entry["index"] = idx
+                    calc_entry["index"] = idx  # index used in link
                     user_calculations.append(calc_entry)
     return render_template(
         "dashboard.html",
@@ -1256,7 +1289,13 @@ def generate_pdf():
         # --- PDF Generation Logic ---
         logo_url = "opb-logo-neu.webp"
 
-        pdf = ReportPDF()
+        # Extract client info for footer
+        client_name = (user_info or {}).get("client_name", "")
+        insurance_number = (user_info or {}).get("insurance_number", "")
+
+        # Create PDF with client info for footer
+        pdf = ReportPDF(client_name=client_name, insurance_number=insurance_number)
+
         font_dir = os.path.join(os.path.dirname(__file__), "dejavu-sans", "ttf")
         pdf.add_font("DejaVu", "", os.path.join(font_dir, "DejaVuSans.ttf"), uni=True)
         pdf.add_font("DejaVu", "B", os.path.join(font_dir, "DejaVuSans-Bold.ttf"), uni=True)
