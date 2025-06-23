@@ -67,6 +67,18 @@ mail = Mail(app)
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
 
+@app.template_filter("eu_date")
+def format_eu_date(date_str):
+    """Convert ISO date or datetime string to European format."""
+    try:
+        dt = datetime.fromisoformat(date_str)
+    except (ValueError, TypeError):
+        return date_str
+    if dt.time() == datetime.min.time():
+        return dt.strftime("%d.%m.%Y")
+    return dt.strftime("%d.%m.%Y %H:%M:%S")
+
+
 
 class ReportPDF(FPDF):
     """Custom PDF class with header for Optimum Pflegeberatung."""
@@ -693,11 +705,12 @@ def start():
     # Ensure no leftover answers from a previous run remain
     session.pop("module_answers", None)
     session.pop("results", None)
+    dob_iso = request.form.get("dob", "").strip()
     session["user_info"] = {
         "berater_name": request.form.get("berater_name", "").strip(),
         "client_name": request.form.get("client_name", "").strip(),
         "insurance_number": request.form.get("insurance_number", "").strip(),
-        "dob": request.form.get("dob", "").strip(),
+        "dob": format_eu_date(dob_iso),
         "address": request.form.get("address", "").strip(),
         "phone": request.form.get("phone", "").strip(),
     }
@@ -1123,7 +1136,7 @@ def calculate():
     if current_user.is_authenticated:
         new_calculation = {
             "user_id": current_user.id,
-            "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "date": datetime.now().strftime("%d.%m.%Y %H:%M:%S"),
             "berater_name": user_info.get("berater_name"),
             "klient_name": user_info.get("client_name"),
             "pflegegrad": results["pflegegrad"],
@@ -1322,6 +1335,8 @@ def generate_pdf():
             ]:
                 value = user_info.get(key)
                 if value:
+                    if key == "dob":
+                        value = format_eu_date(value)
                     check_page_break(pdf, 8)
                     pdf.cell(usable_width, 5, f"{label}: {value}", ln=1)
             pdf.ln(5)

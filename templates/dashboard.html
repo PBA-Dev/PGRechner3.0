@@ -28,7 +28,7 @@
                         <tbody>
                             {% for calc in calculations %}
                                 <tr>
-                                    <td>{{ calc.date }}</td>
+                                    <td>{{ calc.date|eu_date }}</td>
                                     <td>{{ calc.klient_name }}</td>
                                     <td>Pflegegrad {{ calc.pflegegrad }}</td>
                                     <td>

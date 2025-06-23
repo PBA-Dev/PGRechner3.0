@@ -42,7 +42,7 @@
             {% if user_info.berater_name %}<p><strong>Berater/in:</strong> {{ user_info.berater_name }}</p>{% endif %}
             {% if user_info.client_name %}<p><strong>Klient/in:</strong> {{ user_info.client_name }}</p>{% endif %}
             {% if user_info.insurance_number %}<p><strong>Krankenversicherungsnummer:</strong> {{ user_info.insurance_number }}</p>{% endif %}
-            {% if user_info.dob %}<p><strong>Geburtsdatum:</strong> {{ user_info.dob }}</p>{% endif %}
+            {% if user_info.dob %}<p><strong>Geburtsdatum:</strong> {{ user_info.dob|eu_date }}</p>{% endif %}
             {% if user_info.address %}<p><strong>Adresse:</strong> {{ user_info.address }}</p>{% endif %}
             {% if user_info.phone %}<p><strong>Telefon:</strong> {{ user_info.phone }}</p>{% endif %}
         </div>
