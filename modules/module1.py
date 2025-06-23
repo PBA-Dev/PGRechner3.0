@@ -234,8 +234,23 @@ eines Sturzrisikos (Anwesenheit aus Sicherheitsgründen).'''
 die einen spezifischen, außergewöhnlich hohen Hilfebedarf mit
 besonderen Anforderungen an die pflegerische Versorgung aufweisen, aus pflegefachlichen
 Gründen dem Pflegegrad 5 zugeordnet werden, auch wenn ihre
-Gesamtpunkte unter 90 liegen.''' 
-
+Gesamtpunkte unter 90 liegen.''',
+'options': [
+                    {
+                    'text': 'Selbständig',
+                    'score': 0,
+                    'option_explanation': (
+                    '''Die Person kann die Handlung beziehungsweise Aktivität in der Regel selbständig
+durchführen. Möglicherweise ist die Durchführung erschwert oder verlangsamt
+oder nur unter Nutzung von Hilfs-/Pflegehilfsmitteln möglich. Entscheidend
+ist jedoch, dass die Person keine personelle Hilfe benötigt. Vorübergehende oder
+nur vereinzelt auftretende Beeinträchtigungen sind nicht zu berücksichtigen.'''
+                    )
+                },
+{
+                    'text': 'Gebrauchsunfähigkeit beider Arme und beider Beine',
+                    'score': 90,
+                    'option_explanation': (
 '''In Betracht kommen Pflegebedürftige, die rein nach Punkten den Pflegegrad 5
 nicht erreichen würden, dieser aber aufgrund der Schwere der Beeinträchtigung
 angemessen wäre. Als besondere Bedarfskonstellation ist nur die Gebrauchsunfähigkeit
@@ -260,7 +275,9 @@ Versteifungen, bei hochgradigem Tremor, Rigor oder Athetose kann die besondere
 Bedarfskonstellation vorliegen. Eine Gebrauchsunfähigkeit beider Arme
 und beider Beine liegt auch vor, wenn eine minimale Restbeweglichkeit der Arme
 vorhanden ist oder nur noch unkontrollierbare Greifreflexe bestehen.'''
-            
+    )
+                },
+]  
               
         }
     ]
