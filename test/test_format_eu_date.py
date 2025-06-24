@@ -20,3 +20,4 @@ def test_format_eu_date_datetime_space():
 
 def test_format_eu_date_invalid():
     assert format_eu_date("notadate") == "notadate"
+    

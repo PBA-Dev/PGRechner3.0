@@ -21,3 +21,4 @@ def test_leistungen_have_required_fields():
             for entry in period_data["leistungen"]:
                 assert "name" in entry
                 assert "value" in entry
+                

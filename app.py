@@ -380,7 +380,6 @@ def calculate_module5_raw_score(answers):
     return part1_score + part2_score + part3_score + part4_score
 
 
-from flask_mail import Mail, Message
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
@@ -396,11 +395,6 @@ app.config.update(
     MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
 )
 
-
-mail = Mail(app)
-from flask_mail import Mail, Message
-
-mail = Mail(app)
 from itsdangerous import URLSafeTimedSerializer as Serializer
 
 class User(db.Model, UserMixin):
@@ -626,8 +620,10 @@ def reset_token(token):
 @app.route("/")
 def intro():
     """Displays the introduction page."""
-    # Clear any previous session data to start fresh
-    session.clear()
+    # Clear only questionnaire-related session data while keeping the login
+    # session intact
+    for key in ("module_answers", "results", "user_info"):
+        session.pop(key, None)
     return render_template("intro.html")
 
 
@@ -752,8 +748,9 @@ def start():
 
 @app.route("/restart")
 def restart():
-    """Clears the session and returns to the intro page."""
-    session.clear()
+    """Clears questionnaire data and returns to the intro page."""
+    for key in ("module_answers", "results", "user_info"):
+        session.pop(key, None)
     return redirect(url_for("intro"))
 
 
