@@ -36,6 +36,7 @@ from flask_login import (
     login_required,
     current_user,
 )
+from flask_session import Session
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_mail import Mail, Message
@@ -45,12 +46,13 @@ from dotenv import load_dotenv
 app = Flask(__name__)
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv(dotenv_path=".env")
 
 # Set secret key and database URI from environment variables
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['SESSION_TYPE'] = 'filesystem'
 
 # Configure Flask-Mail from environment variables
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
@@ -62,12 +64,14 @@ app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
 
 db = SQLAlchemy(app)
 
-load_dotenv(dotenv_path=".env")
-
 mail = Mail(app)
 
 login_manager = LoginManager(app)
 login_manager.login_view = "login"
+
+# Initialize server-side sessions
+Session(app)
+
 
 @app.template_filter("eu_date")
 def format_eu_date(date_str):
@@ -470,9 +474,9 @@ def load_user(user_id):
 try:
     with app.app_context():
         db.create_all()  # Create tables if they don't exist
-        print("Database tables created/checked successfully.")
+        app.logger.info("Database tables created/checked successfully.")
 except Exception as e:
-    print(f"Error creating database tables on startup: {e}")
+    app.logger.error(f"Error creating database tables on startup: {e}")
     # Depending on the error, you might want to exit or log more verbosely.
     # For a production environment, you'd typically use Alembic for migrations.
 
@@ -1087,6 +1091,10 @@ def calculate():
                 if q_key not in ["notes", "visited"] and isinstance(answer_data, dict):
                     current_module_raw_score += answer_data.get("score", 0)
                     current_detailed_answers[q_key] = answer_data  # Store details
+        # Include module level notes if present
+        module_note = answers.get("notes")
+        if module_note:
+            current_detailed_answers["notes"] = module_note
         module_scores_raw[module_id_str] = current_module_raw_score
         all_detailed_answers[module_id_str] = current_detailed_answers
 
@@ -1478,6 +1486,14 @@ def generate_pdf():
                             pdf.ln(1)
                             pdf.set_font("DejaVu", "", 10)
                             pdf.multi_cell(content_width, 5, f"Antwort: {a_text} (Punkte: {a_score})")
+                            if answer_data.get("notes"):
+                                pdf.set_font("DejaVu", "I", 9)
+                                pdf.multi_cell(
+                                    content_width,
+                                    5,
+                                    f"Notiz: {answer_data.get('notes')}",
+                                )
+                                pdf.set_font("DejaVu", "", 10)
                             pdf.ln(2)
                         elif isinstance(answer_data, str):
                             # Handle answer as plain string (fallback)
@@ -1658,10 +1674,10 @@ try:
                 )
                 db.session.add(new_admin)
                 db.session.commit()
-                print(f"Admin user '{admin_user}' created.")
-        print("Database tables created/checked successfully.")
+                app.logger.info(f"Admin user '{admin_user}' created.")
+        app.logger.info("Database tables created/checked successfully.")
 except Exception as e:
-    print(f"Error during database initialization: {e}")
+    app.logger.error(f"Error during database initialization: {e}")
 
 
 if __name__ == "__main__":
