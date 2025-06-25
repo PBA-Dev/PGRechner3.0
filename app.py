@@ -1,5 +1,7 @@
 import os
 import json
+import base64
+import zlib
 import logging
 from flask import (
     Flask,
@@ -1155,10 +1157,11 @@ def calculate():
         "current_period_key": current_period_key,
     }
 
-    # Store results in session for the result page
+    # Store results in session for the result page using compression
     user_info = session.get("user_info", {})
     results["user_info"] = user_info
-    session["results"] = results
+    compressed = zlib.compress(json.dumps(results).encode("utf-8"))
+    session["results_compressed"] = base64.b64encode(compressed).decode("ascii")
     session.pop("module_answers", None)  # Clear module answers to reduce cookie size
     session.pop("user_info", None)  # Clear user info now that it's stored in results
 
@@ -1181,13 +1184,17 @@ def calculate():
 @app.route("/result")
 def result_page():
     """Displays the result page."""
-    results = session.get("results")
-    user_info = session.get("user_info")
-    if not user_info and results:
-        user_info = results.get("user_info")
-    if not results:
+    compressed = session.get("results_compressed")
+    if not compressed:
         flash("No results found. Please start a new calculation.", "warning")
         return redirect(url_for("intro"))
+    try:
+        decompressed = zlib.decompress(base64.b64decode(compressed)).decode("utf-8")
+        results = json.loads(decompressed)
+    except Exception:
+        flash("Fehler beim Laden der Ergebnisse.", "danger")
+        return redirect(url_for("intro"))
+    user_info = results.get("user_info")
     return render_template(
         "result.html",
         results=results,
