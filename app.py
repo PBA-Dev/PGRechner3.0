@@ -1191,10 +1191,11 @@ def calculate():
     # Store results in session
     session['results'] = results
     session.pop("module_answers", None)
-    session.pop("user_info", None)
 
     # Save calculation to JSON file if the user is authenticated
     if current_user.is_authenticated:
+        # Retrieve user_info here, as it's needed for the calculation record
+        user_info = session.get("user_info", {})
         new_calculation = {
             "user_id": current_user.id,
             "date": datetime.now().strftime("%d.%m.%Y %H:%M:%S"),
@@ -1204,6 +1205,9 @@ def calculate():
             "results": results,  # Save the full results
         }
         save_calculation(new_calculation)
+
+    # Now pop user_info from session after it's been used/saved
+    session.pop("user_info", None)
 
     # Redirect to the result page
     return redirect(url_for("result_page"))
