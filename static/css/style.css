@@ -2,7 +2,7 @@
 
 /* --- Typography --- */
 h1, h2, h3, h4 {
-    color: #333; /* Slightly darker heading color */
+    color: var(--text-color); /* Use text-color variable */
     font-weight: 700; /* Bold */
     margin-top: 1.5em;
     margin-bottom: 0.8em;
@@ -10,7 +10,7 @@ h1, h2, h3, h4 {
 
 h1 {
     font-size: 2.2em;
-    border-bottom: 2px solid #eee;
+    border-bottom: 2px solid var(--card-border);
     padding-bottom: 15px;
     margin-bottom: 30px;
     margin-top: 0; /* No top margin for main page title */
@@ -19,10 +19,11 @@ h1 {
 
 h2 { font-size: 1.8em; }
 h3 { font-size: 1.5em; color: var(--secondary-color); }
-h4 { font-size: 1.2em; color: var(--dark-gray); }
+h4 { font-size: 1.2em; color: var(--text-color); }
 
 p {
     margin-bottom: 1em;
+    color: var(--text-color);
 }
 
 a {
@@ -38,7 +39,7 @@ a:hover {
 hr {
     margin: 30px 0;
     border: 0;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--card-border);
 }
 
 hr.progress-separator {
@@ -99,7 +100,7 @@ hr.progress-separator {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--card-border);
     padding-top: 30px;
 }
 
@@ -107,7 +108,7 @@ hr.progress-separator {
 .question {
     margin-bottom: 30px; /* More space between questions */
     padding: 25px; /* More padding inside card */
-    border: 1px solid var(--medium-gray);
+    border: 1px solid var(--card-border);
     border-radius: var(--border-radius);
     background-color: var(--card-bg); /* White background */
     box-shadow: var(--shadow-sm);
@@ -121,7 +122,7 @@ hr.progress-separator {
     display: block;
     margin-bottom: 10px;
     font-size: 1.1em; /* Slightly larger question text */
-    color: #333;
+    color: var(--text-color);
 }
 
 .explanation-toggle-icon {
@@ -168,9 +169,9 @@ hr.progress-separator {
 
 
 .explanation {
-    background-color: #e2f3f5; /* Light teal background */
+    background-color: var(--card-bg); /* Light teal background */
     border-left: 4px solid var(--secondary-color);
-    color: #333; /* Darker text for better contrast */
+    color: var(--text-color); /* Darker text for better contrast */
     font-size: 0.95em; /* Slightly larger explanation text */
     white-space: pre-line;
 
@@ -198,7 +199,7 @@ hr.progress-separator {
 }
 .explanation hr {
     margin: 15px 0;
-    border-top: 1px solid #bce8f1; /* Lighter teal border */
+    border-top: 1px solid var(--card-border); /* Lighter teal border */
 }
 
 .hidden {
@@ -214,11 +215,12 @@ hr.progress-separator {
     cursor: pointer;
     padding: 12px 15px; /* More padding */
     border-radius: var(--border-radius);
-    border: 2px solid var(--medium-gray); /* Use gray border initially */
+    border: 2px solid var(--card-border); /* Use gray border initially */
     transition: background-color 0.2s ease, border-color 0.2s ease;
+    color: var(--text-color);
 }
 .options label:hover {
-    background-color: var(--light-bg); /* Subtle hover */
+    background-color: var(--bg-color); /* Subtle hover */
     border-color: #adb5bd; /* Darker gray border */
 }
 .options input[type="radio"] {
@@ -243,8 +245,8 @@ hr.progress-separator {
 .progress-section {
     margin-bottom: 30px;
     padding: 20px; /* More padding */
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
+    background-color: var(--card-bg);
+    border: 1px solid var(--card-border);
     border-radius: var(--border-radius);
     position: sticky;
     top: 0;
@@ -254,7 +256,7 @@ hr.progress-separator {
     margin-top: 0;
     margin-bottom: 20px; /* More space */
     text-align: center;
-    color: var(--dark-gray);
+    color: var(--text-color);
     font-weight: 700;
 }
 .progress-container {
@@ -265,15 +267,17 @@ hr.progress-separator {
 .progress-bar {
     width: 100%;
     height: 28px; /* Slightly taller */
-    background-color: #e9ecef;
+    background-color: var(--card-bg);
     border-radius: var(--border-radius);
     overflow: hidden;
     position: relative;
-    border: 1px solid var(--medium-gray);
+    border: 1px solid var(--card-border);
 }
+
+
 .progress-bar-fill {
     height: 100%;
-    background-color: var(--progress-bar-fill-color); /* Use darker blue */
+    background-color: var(--primary-color); /* Use primary-color for fill */
     border-radius: var(--border-radius);
     transition: width 0.6s ease;
     display: flex;
@@ -323,7 +327,7 @@ hr.progress-separator {
     transform: translateX(-50%);
     font-size: 0.8em; /* Slightly larger marker text */
     font-weight: bold;
-    color: #6c757d; /* Gray marker text */
+    color: var(--text-color); /* Gray marker text */
     text-align: center;
     white-space: nowrap;
     cursor: default;
@@ -336,20 +340,20 @@ hr.progress-separator {
     transform: translateX(-50%);
     width: 2px; /* Thicker line */
     height: 12px;
-    background-color: var(--medium-gray); /* Use medium gray */
+    background-color: var(--card-border); /* Use medium gray */
     border-radius: 1px;
 }
 .marker .marker-value {
     display: block;
     font-size: 0.9em;
     font-weight: normal;
-    color: #868e96;
+    color: var(--text-color);
     margin-top: 2px; /* Space between PG label and value */
 }
 .progress-note {
     text-align: center;
     font-size: 0.85em; /* Slightly larger note */
-    color: #6c757d;
+    color: var(--text-color);
     margin-top: 15px;
     margin-bottom: 0;
 }
@@ -386,7 +390,7 @@ hr.progress-separator {
 
 /* --- Result Page Specifics --- */
 .summary {
-    background-color: #eaf7ff; /* Light blue background */
+    background-color: var(--card-bg); /* Light blue background */
     border-left: 5px solid var(--primary-color);
     padding: 25px; /* More padding */
     margin-bottom: 35px;
@@ -401,25 +405,25 @@ hr.progress-separator {
     font-size: 1.1em;
 }
 .summary p strong {
-    color: #333;
+    color: var(--text-color);
 }
 .summary p em { /* Style for the thresholds note */
     font-size: 0.9em;
-    color: #555;
+    color: var(--text-color);
 }
 
 .details h2 {
     margin-top: 30px;
     margin-bottom: 20px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--card-border);
     padding-bottom: 10px;
 }
 .module-result {
     margin-bottom: 25px;
     padding: 20px;
-    border: 1px solid #eee;
+    border: 1px solid var(--card-border);
     border-radius: var(--border-radius);
-    background-color: #fdfdfd; /* Slightly off-white */
+    background-color: var(--card-bg); /* Slightly off-white */
 }
 .module-result h3 {
     margin-top: 0;
@@ -435,25 +439,25 @@ hr.progress-separator {
     padding-left: 0;
 }
 .module-result li {
-    background-color: #f8f9fa; /* Light gray list items */
+    background-color: var(--bg-color); /* Light gray list items */
     padding: 12px 15px;
     margin-bottom: 10px;
     border-radius: var(--border-radius);
-    border: 1px solid #eee;
+    border: 1px solid var(--card-border);
     font-size: 0.95em;
 }
 .module-result li strong {
-    color: #555;
+    color: var(--text-color);
 }
 .contribution-note { /* Style from previous step */
     font-style: italic;
-    color: #555;
+    color: var(--text-color);
     font-size: 0.9em;
     margin-top: -5px;
     margin-bottom: 10px;
 }
 .actions {
-     border-top: 1px solid #eee;
+     border-top: 1px solid var(--card-border);
      padding-top: 30px;
      margin-top: 30px;
      display: flex;
@@ -474,7 +478,7 @@ hr.progress-separator {
 
 .option-info,
 .notes-field {
-    background-color: #f8f9fa;
+    background-color: var(--card-bg);
     border-left: 4px solid var(--secondary-color);
     padding: 10px;
     margin-top: 8px;

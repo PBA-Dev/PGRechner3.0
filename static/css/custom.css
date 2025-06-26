@@ -17,24 +17,28 @@
 body.light-mode {
     --bg-color: #f8f9fa;
     --text-color: #212529;
+    --text-light: #ffffff; /* White for light mode text on dark backgrounds */
     --card-bg: #ffffff;
     --card-border: #dee2e6;
     --navbar-bg: #ffffff;
     --navbar-text: #000000;
     --btn-outline-secondary-text: #6c757d;
     --btn-outline-secondary-border: #6c757d;
+    --progress-bar-fill-color: var(--primary-color);
 }
 
 /* --- Dark Mode Palette --- */
 body.dark-mode {
     --bg-color: #121212;
     --text-color: #ffffff;
+    --text-light: #ffffff; /* White for dark mode text on dark backgrounds */
     --card-bg: #1e1e1e;
     --card-border: #333;
     --navbar-bg: #1f1f1f;
     --navbar-text: #ffffff;
     --btn-outline-secondary-text: #ffffff;
     --btn-outline-secondary-border: #ffffff;
+    --progress-bar-fill-color: var(--primary-color);
 }
 
 /* --- Base Styles --- */
