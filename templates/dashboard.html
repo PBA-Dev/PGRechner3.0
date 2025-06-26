@@ -42,7 +42,7 @@
             {% else %}
                 <p>Sie haben noch keine Berechnungen durchgeführt.</p>
             {% endif %}
-            <a href="{{ url_for('intro') }}" class="btn btn-primary mt-3">Neue Berechnung starten</a>
+            <a href="{{ url_for('rechner') }}" class="btn btn-primary mt-3">Neue Berechnung starten</a>
         </div>
         <div class="col-md-4">
             <div class="card">
@@ -56,7 +56,7 @@
                         <strong>Firma:</strong> {{ current_user.company or 'N/A' }}
                     </p>
                     <a href="{{ url_for('edit_profile') }}" class="btn btn-secondary">Profil bearbeiten</a>
-                    <a href="{{ url_for('reset_request') }}" class="btn btn-secondary mt-2">Passwort ändern</a>
+                    <a href="{{ url_for('change_password') }}" class="btn btn-secondary mt-2">Passwort ändern</a>
                 </div>
             </div>
         </div>

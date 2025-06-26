@@ -1,41 +1,4 @@
-/* --- Base Styles & Variables --- */
-:root {
-    --primary-color: #007bff; /* Professional Blue */
-    --secondary-color: #17a2b8; /* Calming Teal/Cyan */
-    --success-color: #28a745; /* Green for progress/success */
-    --warning-color: #ffc107; /* Yellow for warnings */
-    --danger-color: #dc3545; /* Red for errors */
-    --progress-bar-fill-color: #0056b3; /* Darker blue for progress bar */
-    --light-bg: #f8f9fa; /* Very light gray background */
-    --medium-gray: #ced4da; /* Borders, subtle elements */
-    --dark-gray: #495057; /* Body text */
-    --text-light: #ffffff; /* Text on dark backgrounds */
-    --card-bg: #ffffff; /* Card background */
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
-    --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
-    --border-radius: 6px; /* Consistent rounded corners */
-    --font-family-base: 'Lato', sans-serif;
-}
 
-body {
-    font-family: var(--font-family-base);
-    line-height: 1.6;
-    margin: 0;
-    padding: 20px;
-    background-color: var(--light-bg);
-    color: var(--dark-gray);
-    font-size: 16px; /* Base font size */
-}
-
-.container {
-    max-width: 850px; /* Slightly wider */
-    margin: 20px auto;
-    background: var(--card-bg);
-    padding: 30px 40px; /* More padding */
-    border-radius: var(--border-radius);
-    box-shadow: var(--shadow-md);
-    animation: fadeIn 0.5s ease-out forwards; /* Added fade-in */
-}
 
 /* --- Typography --- */
 h1, h2, h3, h4 {

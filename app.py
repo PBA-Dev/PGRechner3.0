@@ -16,6 +16,7 @@ from flask import (
     current_app,
     jsonify,
 )
+from flask_session import Session # Import the Session extension
 from datetime import datetime, date
 from fpdf import FPDF
 from fpdf.enums import XPos, YPos
@@ -59,6 +60,13 @@ app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() in ['true
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+
+# Configure server-side sessions
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_FILE_DIR'] = './.flask_session/'
+Session(app)
 
 db = SQLAlchemy(app)
 
@@ -480,8 +488,8 @@ except Exception as e:
 # --- Routes ---
 
 
-@app.route("/landing")  # This endpoint is now explicitly defined
-def landing():
+@app.route("/")
+def index():
     return render_template("landing.html")
 
 
@@ -578,7 +586,7 @@ def login():
             login_user(user)
             flash("Anmeldung erfolgreich!", "success")
             if user.role == "admin":
-                return redirect(url_for("admin"))
+                return redirect(url_for("admin_dashboard"))
             else:
                 return redirect(url_for("dashboard"))
         else:
@@ -619,8 +627,8 @@ def reset_token(token):
     return render_template('reset_token.html', title='Reset Password', form=form)
 
 
-@app.route("/")
-def intro():
+@app.route("/rechner")
+def rechner():
     """Displays the introduction page."""
     # Clear only questionnaire-related session data while keeping the login
     # session intact
@@ -729,8 +737,23 @@ def edit_profile():
         form.company.data = current_user.company
     return render_template("edit_profile.html", title="Edit Profile", form=form)
 
+@app.route("/change_password", methods=["GET", "POST"])
+@login_required
+def change_password():
+    form = ChangePasswordForm()
+    if form.validate_on_submit():
+        if check_password_hash(current_user.password_hash, form.current_password.data):
+            current_user.password_hash = generate_password_hash(form.new_password.data)
+            db.session.commit()
+            flash("Your password has been updated.", "success")
+            return redirect(url_for("dashboard"))
+        else:
+            flash("Incorrect current password.", "danger")
+    return render_template("change_password.html", title="Change Password", form=form)
+
 
 @app.route("/start", methods=["POST"])
+@login_required
 def start():
     """Stores Berater and Klient information then starts the questionnaire."""
     # Ensure no leftover answers from a previous run remain
@@ -753,7 +776,7 @@ def restart():
     """Clears questionnaire data and returns to the intro page."""
     for key in ("module_answers", "results", "user_info"):
         session.pop(key, None)
-    return redirect(url_for("intro"))
+    return redirect(url_for("rechner"))
 
 
 # --- Update module_page_submit function ---
@@ -770,7 +793,7 @@ def module_page(module_id):
                 int(k) for k in session["module_answers"].keys() if k.isdigit()
             )
             return redirect(url_for("module_page", module_id=first_answered))
-        return redirect(url_for("intro"))
+        return redirect(url_for("rechner"))
 
     module_data = all_modules[module_id]
     module_id_str = str(module_id)
@@ -852,7 +875,7 @@ def module_page_submit(module_id):
     # storing answers for other modules, storing notes, redirecting)
     if module_id not in all_modules:
         flash("Ungültiges Modul.", "error")
-        return redirect(url_for("intro"))
+        return redirect(url_for("rechner"))
 
     module_data = all_modules[module_id]
     module_id_str = str(module_id)
@@ -1058,7 +1081,7 @@ def module_page_submit(module_id):
 def calculate():
     if "module_answers" not in session or not session["module_answers"]:
         flash("No answers provided. Please start the questionnaire.", "warning")
-        return redirect(url_for("intro"))
+        return redirect(url_for("rechner"))
 
     all_answers = session.get("module_answers", {})
     module_scores_raw = {}
@@ -1157,13 +1180,10 @@ def calculate():
         "current_period_key": current_period_key,
     }
 
-    # Store results in session for the result page using compression
-    user_info = session.get("user_info", {})
-    results["user_info"] = user_info
-    compressed = zlib.compress(json.dumps(results).encode("utf-8"))
-    session["results_compressed"] = base64.b64encode(compressed).decode("ascii")
-    session.pop("module_answers", None)  # Clear module answers to reduce cookie size
-    session.pop("user_info", None)  # Clear user info now that it's stored in results
+    # Store results in session
+    session['results'] = results
+    session.pop("module_answers", None)
+    session.pop("user_info", None)
 
     # Save calculation to JSON file if the user is authenticated
     if current_user.is_authenticated:
@@ -1184,16 +1204,10 @@ def calculate():
 @app.route("/result")
 def result_page():
     """Displays the result page."""
-    compressed = session.get("results_compressed")
-    if not compressed:
+    results = session.get("results")
+    if not results:
         flash("No results found. Please start a new calculation.", "warning")
-        return redirect(url_for("intro"))
-    try:
-        decompressed = zlib.decompress(base64.b64decode(compressed)).decode("utf-8")
-        results = json.loads(decompressed)
-    except Exception:
-        flash("Fehler beim Laden der Ergebnisse.", "danger")
-        return redirect(url_for("intro"))
+        return redirect(url_for("rechner"))
     user_info = results.get("user_info")
     return render_template(
         "result.html",
@@ -1665,4 +1679,4 @@ except Exception as e:
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)

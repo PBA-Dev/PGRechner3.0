@@ -9,3 +9,4 @@ python-dotenv
 Flask-WTF
 fpdf2
 email_validator
+Flask-Session

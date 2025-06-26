@@ -1,11 +1,78 @@
-{% extends 'base.html' %}
-{% block title %}Willkommen{% endblock %}
+{% extends 'layout.html' %}
+{% block title %}Willkommen bei Optimum Pflegeberatung{% endblock %}
 {% block content %}
-<div class="text-center mt-5">
-    <h1>Willkommen beim Optimum Pflegeberatung</h1>
-    <p class="mb-4">Nutzen Sie den Rechner, um eine Pflegegrad-Einschätzung vorzunehmen.</p>
-    <a class="btn btn-primary me-2" href="{{ url_for('intro') }}">Als Gast starten</a>
-    <a class="btn btn-secondary me-2" href="{{ url_for('login') }}">Login</a>
-    <a class="btn btn-secondary" href="{{ url_for('register') }}">Registrieren</a>
+<div class="container my-5 fade-in">
+    <div class="row p-4 pb-0 pe-lg-0 pt-lg-5 align-items-center rounded-3 border shadow-lg">
+        <div class="col-lg-7 p-3 p-lg-5 pt-lg-3">
+            <h1 class="display-4 fw-bold lh-1 text-body-emphasis">Der genaueste Pflegegradrechner in Deutschland</h1>
+            <p class="lead">Ermitteln Sie schnell und einfach den voraussichtlichen Pflegegrad mit unserem intelligenten Rechner. Perfekt für Pflegeberater, Dienstleister und Familien.</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-4 mb-lg-3">
+                <a href="{{ url_for('rechner') }}" class="btn btn-primary btn-lg px-4 me-md-2 fw-bold">Jetzt Pflegegrad berechnen</a>
+                <a href="#features" class="btn btn-outline-secondary btn-lg px-4">Mehr erfahren</a>
+            </div>
+        </div>
+        <div class="col-lg-4 offset-lg-1 p-0 overflow-hidden shadow-lg">
+            <img class="rounded-lg-3" src="https://pflegeberatung-allstars.de/wp-content/uploads/2025/06/opb-logo-neu.jpg" alt="opb-logo" width="420" margin-right="25">
+        </div>
+    </div>
+</div>
+
+<div id="features" class="container px-4 py-5">
+    <h2 class="pb-2 border-bottom">Features</h2>
+    <div class="row row-cols-1 row-cols-md-2 align-items-md-center g-5 py-5">
+        <div class="col d-flex flex-column align-items-start gap-2">
+            <h2 class="fw-bold text-body-emphasis">Warum unseren Rechner verwenden?</h2>
+            <p class="text-body-secondary">Unser Pflegegradrechner basiert auf dem aktuellen Begutachtungsassessment (NBA) und bietet Ihnen eine verlässliche und genaue Einschätzung. Sparen Sie Zeit und erhalten Sie eine detaillierte Auswertung, die Ihnen bei der Vorbereitung auf die offizielle Begutachtung hilft.</p>
+            <a href="{{ url_for('rechner') }}" class="btn btn-primary btn-lg">Jetzt starten</a>
+        </div>
+
+        <div class="col">
+            <div class="row row-cols-1 row-cols-sm-2 g-4">
+                <div class="col d-flex flex-column gap-2">
+                    <div
+                        class="feature-icon-small d-inline-flex align-items-center justify-content-center text-bg-primary bg-gradient fs-4 rounded-3">
+                        <svg class="bi" width="1em" height="1em">
+                            <use xlink:href="#collection" />
+                        </svg>
+                    </div>
+                    <h4 class="fw-semibold mb-0 text-body-emphasis">Einfach & Intuitiv</h4>
+                    <p class="text-body-secondary">Unser Rechner führt Sie Schritt für Schritt durch alle relevanten Module.</p>
+                </div>
+
+                <div class="col d-flex flex-column gap-2">
+                    <div
+                        class="feature-icon-small d-inline-flex align-items-center justify-content-center text-bg-primary bg-gradient fs-4 rounded-3">
+                        <svg class="bi" width="1em" height="1em">
+                            <use xlink:href="#gear-fill" />
+                        </svg>
+                    </div>
+                    <h4 class="fw-semibold mb-0 text-body-emphasis">Präzise Ergebnisse</h4>
+                    <p class="text-body-secondary">Erhalten Sie eine detaillierte Auswertung und eine verlässliche Einschätzung.</p>
+                </div>
+
+                <div class="col d-flex flex-column gap-2">
+                    <div
+                        class="feature-icon-small d-inline-flex align-items-center justify-content-center text-bg-primary bg-gradient fs-4 rounded-3">
+                        <svg class="bi" width="1em" height="1em">
+                            <use xlink:href="#speedometer" />
+                        </svg>
+                    </div>
+                    <h4 class="fw-semibold mb-0 text-body-emphasis">Für Profis & Privat</h4>
+                    <p class="text-body-secondary">Ideal für den professionellen Einsatz oder zur persönlichen Orientierung.</p>
+                </div>
+
+                <div class="col d-flex flex-column gap-2">
+                    <div
+                        class="feature-icon-small d-inline-flex align-items-center justify-content-center text-bg-primary bg-gradient fs-4 rounded-3">
+                        <svg class="bi" width="1em" height="1em">
+                            <use xlink:href="#table" />
+                        </svg>
+                    </div>
+                    <h4 class="fw-semibold mb-0 text-body-emphasis">Aktuelle Daten</h4>
+                    <p class="text-body-secondary">Unsere Berechnungen basieren auf den neuesten gesetzlichen Vorgaben.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

@@ -39,7 +39,7 @@ DB_PASSWORD=postgres
 DB_HOST=pgrechner_db
 DB_PORT=5432
 DB_NAME=pgrechner
-DATABASE_URL=postgresql://postgres:postgres@pgrechner_db:5432/pgrechner
+DATABASE_URL=postgresql://postgres:postgres@pgrechner_db_test:5432/pgrechner
 
 Do not hard-code secrets or credentials in code.
 

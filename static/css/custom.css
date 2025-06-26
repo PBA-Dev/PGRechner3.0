@@ -1,0 +1,100 @@
+/* Custom CSS for PGRechner */
+
+/* --- Color Variables --- */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #17a2b8;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+    --border-radius: 6px;
+    --font-family-base: 'Roboto', sans-serif;
+}
+
+/* --- Light Mode Palette --- */
+body.light-mode {
+    --bg-color: #f8f9fa;
+    --text-color: #212529;
+    --card-bg: #ffffff;
+    --card-border: #dee2e6;
+    --navbar-bg: #ffffff;
+    --navbar-text: #000000;
+    --btn-outline-secondary-text: #6c757d;
+    --btn-outline-secondary-border: #6c757d;
+}
+
+/* --- Dark Mode Palette --- */
+body.dark-mode {
+    --bg-color: #121212;
+    --text-color: #ffffff;
+    --card-bg: #1e1e1e;
+    --card-border: #333;
+    --navbar-bg: #1f1f1f;
+    --navbar-text: #ffffff;
+    --btn-outline-secondary-text: #ffffff;
+    --btn-outline-secondary-border: #ffffff;
+}
+
+/* --- Base Styles --- */
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-family-base);
+    line-height: 1.6;
+    margin: 0;
+    padding: 20px;
+    font-size: 16px;
+}
+
+/* --- Typography --- */
+h1, h2, h4, h5, .text-body-emphasis {
+    color: var(--text-color) !important;
+}
+
+/* --- Navbar --- */
+.navbar {
+    background-color: var(--navbar-bg) !important;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.navbar-brand, .nav-link {
+    color: var(--navbar-text) !important;
+}
+
+/* --- Cards --- */
+.card {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+}
+
+.card-header {
+    background-color: var(--card-bg) !important;
+    border-bottom: 1px solid var(--card-border);
+}
+
+/* --- Buttons --- */
+.btn-outline-secondary {
+    color: var(--btn-outline-secondary-text);
+    border-color: var(--btn-outline-secondary-border);
+}
+
+/* --- Feature Icons --- */
+.feature-icon-small {
+    background-color: var(--primary-color) !important;
+}
+
+/* --- Animations --- */
+.fade-in {
+    animation: fadeIn 1s;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
