@@ -73,6 +73,34 @@ h1, h2, h4, h5, .text-body-emphasis, .text-body-secondary {
     border-color: var(--card-border);
 }
 
+.dark-mode .progress-note {
+    background-color: rgb(0, 0, 0);
+    color: var(--text-color, #f8f9fa) !important;
+}
+
+.dark-mode .explanation {
+    background-color: rgb(0, 0, 0);
+    color: var(--text-color, #f8f9fa) !important;
+}
+
+.dark-mode .option-info {
+    background-color: rgb(0, 0, 0);
+    color: var(--text-color, #f8f9fa) !important;
+}
+
+
+.dark-mode .form-label {
+    background-color: rgb(0, 0, 0);
+    color: var(--text-color, #f8f9fa) !important;
+}
+
+
+.dark-mode .question-block {
+    background-color: #222 !important;
+    color: var(--text-color, #f8f9fa) !important;
+}
+
+
 .card-header {
     background-color: var(--card-bg) !important;
     border-bottom: 1px solid var(--card-border);

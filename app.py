@@ -1186,6 +1186,7 @@ def calculate():
         "notes": aggregated_notes,  # Pass aggregated notes
         "benefits": benefits_for_pg,
         "current_period_key": current_period_key,
+        "user_info": session.get("user_info", {})
     }
 
     # Store results in session

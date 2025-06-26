@@ -1,25 +1,32 @@
-// Dark/Light mode toggle
 document.addEventListener('DOMContentLoaded', function () {
     const themeToggle = document.getElementById('theme-toggle');
+    const sunIcon = '<i class="bi bi-sun"></i>';
+    const moonIcon = '<i class="bi bi-moon"></i>';
+
     if (themeToggle) {
         themeToggle.addEventListener('click', function() {
             document.body.classList.toggle('dark-mode');
             document.body.classList.toggle('light-mode');
 
-            // Save theme preference
+            let theme = 'light';
             if (document.body.classList.contains('dark-mode')) {
-                localStorage.setItem('theme', 'dark');
-            } else {
-                localStorage.setItem('theme', 'light');
+                theme = 'dark';
             }
+            localStorage.setItem('theme', theme);
+            updateIcon(theme);
         });
     }
 
-    // Apply saved theme
-    const savedTheme = localStorage.getItem('theme');
-    if (savedTheme === 'dark') {
-        document.body.classList.add('dark-mode');
-    } else {
-        document.body.classList.add('light-mode');
+    function updateIcon(theme) {
+        if (theme === 'dark') {
+            themeToggle.innerHTML = moonIcon;
+        } else {
+            themeToggle.innerHTML = sunIcon;
+        }
     }
+
+    // Apply saved theme and icon
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.body.classList.add(savedTheme + '-mode');
+    updateIcon(savedTheme);
 });
