@@ -49,7 +49,7 @@ body {
 }
 
 /* --- Typography --- */
-h1, h2, h4, h5, .text-body-emphasis {
+h1, h2, h4, h5, .text-body-emphasis, .text-body-secondary {
     color: var(--text-color) !important;
 }
 

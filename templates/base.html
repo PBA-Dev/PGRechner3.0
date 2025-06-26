@@ -11,7 +11,9 @@
 </head>
 <body>
     <nav>
-        <a href="{{ url_for('index') }}">Start</a>
+        <a class="navbar-brand" href="{{ url_for('index') }}">
+            <img src="{{ url_for('static', filename='images/opb-logo-neu.webp') }}" alt="PGRechner Logo" style="height: 40px; margin-right: 10px;">
+        </a>
         {% if current_user.is_authenticated %}
             | <a href="{{ url_for('dashboard') }}">Dashboard</a>
             {% if current_user.role == 'admin' %}
