@@ -5,4 +5,5 @@ __pycache__/
 /Module1-6-images
 /dejavu-sans.zip
 NBA-Punkts.rtf
+.flask_session/
 # Ignore Python cache files

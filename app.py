@@ -57,8 +57,9 @@ app.config['SESSION_TYPE'] = 'filesystem'
 
 # Configure Flask-Mail from environment variables
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() in ['true', '1', 't']
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 465))
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
@@ -400,15 +401,6 @@ from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 
-app.config.update(
-    MAIL_SERVER='smtp.gmail.com',
-    MAIL_PORT=587,
-    MAIL_USE_TLS=True,
-    MAIL_USERNAME=os.getenv('MAIL_USERNAME'),
-    MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),
-    MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
-)
-
 from itsdangerous import URLSafeTimedSerializer as Serializer
 
 class User(db.Model, UserMixin):
@@ -423,6 +415,8 @@ class User(db.Model, UserMixin):
     company = db.Column(db.String(120), nullable=True)
     gdpr_consent = db.Column(db.Boolean, nullable=False, default=False)
     role = db.Column(db.String(20), nullable=False, default="user")  # 'user' or 'admin'
+    is_confirmed = db.Column(db.Boolean, nullable=False, default=False)
+    confirmed_on = db.Column(db.DateTime, nullable=True)
 
     def get_reset_token(self, expires_sec=1800):
         s = Serializer(app.config['SECRET_KEY'])
@@ -437,6 +431,8 @@ class User(db.Model, UserMixin):
             return None
         return User.query.get(user_id)
 
+    
+
     def __repr__(self):
         return f"<User {self.username}>"
 
@@ -445,7 +441,7 @@ class User(db.Model, UserMixin):
 
     @property
     def is_active(self):
-        return True  # Assuming all users are active
+        return self.is_confirmed
 
     @property
     def is_authenticated(self):
@@ -543,40 +539,59 @@ def register():
             company=form.company.data,
             gdpr_consent=form.gdpr_consent.data,
             role="user",
+            is_confirmed=False,
         )
         db.session.add(new_user)
         db.session.commit()
 
-        # --- E-Mail-Versand vorübergehend deaktiviert ---
-        # Der folgende Codeblock ist für den Versand von Bestätigungs-E-Mails zuständig.
-        # Er wurde auskommentiert, da er in der aktuellen Docker-Umgebung zu Timeout-Fehlern führt,
-        # die den Registrierungsprozess blockieren.
-        #
-        # Für die Produktionsumgebung sollte dieser Block wieder aktiviert und die
-        # E-Mail-Server-Konfiguration (`.env`-Datei) sorgfältig überprüft werden,
-        # um eine reibungslose Verbindung zum SMTP-Server zu gewährleisten.
-        #
-        # try:
-        #     msg = Message(
-        #         "Registrierung erfolgreich",
-        #         sender=app.config["MAIL_DEFAULT_SENDER"],
-        #         recipients=[new_user.email],
-        #     )
-        #     msg.body = f"Hallo {new_user.username}, Ihre Registrierung war erfolgreich."
-        #     mail.send(msg)
-        #     flash("Registrierung erfolgreich! Bitte überprüfen Sie Ihre E-Mails.", "success")
-        # except Exception as e:
-        #     app.logger.error(f"Error sending email: {e}")
-        #     flash(
-        #         "Registrierung erfolgreich, aber die Bestätigungs-E-Mail konnte nicht gesendet werden.",
-        #         "warning",
-        #     )
-        # --- Ende des deaktivierten E-Mail-Blocks ---
+        # Send confirmation email
+        try:
+            token = new_user.get_reset_token()  # Re-using reset token for confirmation
+            msg = Message(
+                "Bestätigen Sie Ihre E-Mail-Adresse",
+                sender=app.config["MAIL_DEFAULT_SENDER"],
+                recipients=[new_user.email],
+            )
+            msg.body = f"""Hallo {new_user.username},
 
-        flash("Registrierung erfolgreich! Sie können sich jetzt anmelden.", "success")
+Vielen Dank für Ihre Registrierung. Bitte klicken Sie auf den folgenden Link, um Ihre E-Mail-Adresse zu bestätigen:
+
+{url_for('confirm_email', token=token, _external=True)}
+
+Wenn Sie sich nicht registriert haben, können Sie diese E-Mail ignorieren.
+
+Mit freundlichen Grüßen,
+Ihr Team
+"""
+            mail.send(msg)
+            flash("Ein Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang (und Spam-Ordner).", "info")
+        except Exception as e:
+            app.logger.error(f"Error sending confirmation email: {e}")
+            flash("Registrierung erfolgreich, aber die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte kontaktieren Sie den Support.", "warning")
+
         return redirect(url_for("login"))
 
     return render_template("register.html", form=form)
+
+
+@app.route('/confirm/<token>')
+def confirm_email(token):
+    try:
+        user = User.verify_reset_token(token)
+        if user is None:
+            flash('Der Bestätigungslink ist ungültig oder abgelaufen.', 'danger')
+            return redirect(url_for('register'))
+        if user.is_confirmed:
+            flash('Ihre E-Mail-Adresse ist bereits bestätigt. Bitte melden Sie sich an.', 'success')
+        else:
+            user.is_confirmed = True
+            user.confirmed_on = datetime.now()
+            db.session.commit()
+            flash('Ihre E-Mail-Adresse wurde erfolgreich bestätigt! Sie können sich jetzt anmelden.', 'success')
+    except Exception as e:
+        app.logger.error(f"Error confirming email: {e}")
+        flash('Ein Fehler ist bei der Bestätigung Ihrer E-Mail-Adresse aufgetreten.', 'danger')
+    return redirect(url_for('login'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -587,6 +602,9 @@ def login():
         user = User.query.filter_by(username=username).first()
 
         if user and check_password_hash(user.password_hash, password):
+            if not user.is_confirmed:
+                flash('Bitte bestätigen Sie zuerst Ihre E-Mail-Adresse, bevor Sie sich anmelden.', 'warning')
+                return redirect(url_for('login'))
             login_user(user)
             flash("Anmeldung erfolgreich!", "success")
             if user.role == "admin":
@@ -711,7 +729,7 @@ def send_reset_email(user):
     token = user.get_reset_token()
     msg = Message(
         "Password Reset Request",
-        sender=app.config["MAIL_USERNAME"],
+        sender=app.config["MAIL_DEFAULT_SENDER"],
         recipients=[user.email],
     )
     msg.body = f"""To reset your password, visit the following link:
@@ -720,6 +738,49 @@ def send_reset_email(user):
 If you did not make this request then simply ignore this email and no changes will be made.
 """
     mail.send(msg)
+
+
+class ResendConfirmationForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    submit = SubmitField("Resend Confirmation Email")
+
+
+@app.route("/resend_confirmation", methods=["GET", "POST"])
+def resend_confirmation():
+    form = ResendConfirmationForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            if user.is_confirmed:
+                flash('Ihre E-Mail-Adresse ist bereits bestätigt. Bitte melden Sie sich an.', 'success')
+                return redirect(url_for('login'))
+            try:
+                token = user.get_reset_token()
+                msg = Message(
+                    "Bestätigen Sie Ihre E-Mail-Adresse",
+                    sender=app.config["MAIL_DEFAULT_SENDER"],
+                    recipients=[user.email],
+                )
+                msg.body = f"""Hallo {user.username},
+
+Sie haben eine erneute Bestätigung Ihrer E-Mail-Adresse angefordert. Bitte klicken Sie auf den folgenden Link, um Ihre E-Mail-Adresse zu bestätigen:
+
+{url_for('confirm_email', token=token, _external=True)}
+
+Wenn Sie diese E-Mail nicht angefordert haben, können Sie sie ignorieren.
+
+Mit freundlichen Grüßen,
+Ihr Team
+"""
+                mail.send(msg)
+                flash("Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang (und Spam-Ordner).", "info")
+            except Exception as e:
+                current_app.logger.error(f"Error resending confirmation email: {e}")
+                flash("Es gab ein Problem beim erneuten Senden der Bestätigungs-E-Mail. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.", "danger")
+        else:
+            flash("Es konnte kein Konto mit dieser E-Mail-Adresse gefunden werden.", "danger")
+        return redirect(url_for('login'))
+    return render_template('resend_confirmation.html', title='Resend Confirmation', form=form)
 
 
 @app.route("/edit_profile", methods=["GET", "POST"])
@@ -1690,6 +1751,8 @@ try:
                     vorname="User",
                     gdpr_consent=True,  # Implied consent for admin
                     role="admin",
+                    is_confirmed=True,
+                    confirmed_on=datetime.now(),
                 )
                 db.session.add(new_admin)
                 db.session.commit()

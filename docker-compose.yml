@@ -1,51 +1,40 @@
 version: "3.9"
 
 services:
-  pgrechner_app_test:
+  pgrechner_app_0_5:
     build: .
-    container_name: pgrechner_app_test
+    container_name: pgrechner_app_0_5
     volumes:
       - .:/app
     env_file: .env
-    depends_on:
-      - pgrechner_db_test
-    networks:
-      - proxy_network
-    ports:
-      - "5001:5001"
-
-
-  pgrechner_db_test:
-    image: postgres:15-alpine
-    container_name: pgrechner_db_test
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: pgrechner
-    volumes:
-      - pgrechner_db_data:/var/lib/postgresql/data
-    networks:
-      - proxy_network
-
-  pgrechner_nginx:
-    image: nginx:alpine
-    container_name: pgrechner_nginx_test
     environment:
       - VIRTUAL_HOST=opbrechner.optimum-pflegeberatung.de
       - LETSENCRYPT_HOST=opbrechner.optimum-pflegeberatung.de
       - LETSENCRYPT_EMAIL=alex.torrescanety@optimum-pflegeberatung.de
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - VIRTUAL_PORT=5001
     depends_on:
-      - pgrechner_app_test
+      - pgrechner_db_0_5
+    restart: unless-stopped
+    networks:
+      - proxy_network
+
+  pgrechner_db_0_5:
+    image: postgres:15-alpine
+    container_name: pgrechner_db_0_5
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: pgrechner_0_5
+    volumes:
+      - pgrechner_db_data_0_5:/var/lib/postgresql/data
+    restart: unless-stopped
     networks:
       - proxy_network
 
 volumes:
-  pgrechner_db_data:
-    
+  pgrechner_db_data_0_5:
 
 networks:
   proxy_network:
-    # external: true # remove comment when in Production
+    external: true
     
