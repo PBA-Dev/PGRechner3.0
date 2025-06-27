@@ -82,7 +82,7 @@
                                     <input type="hidden" name="calculation_id" value="{{ loop.index0 }}">
                                     <button type="submit" class="btn btn-secondary btn-sm">PDF</button>
                                 </form>
-                                <form action="{{ url_for('admin_delete_calculation', calc_index=loop.index0) }}" method="post" onsubmit="return confirm('Sind Sie sicher, dass Sie diese Berechnung löschen möchten?');" style="display:inline;">
+                                <form action="{{ url_for('admin_delete_calculation', calc_id=calc.id) }}" method="post" onsubmit="return confirm('Sind Sie sicher, dass Sie diese Berechnung löschen möchten?');" style="display:inline;">
                                     <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
                                 </form>
                             </td>

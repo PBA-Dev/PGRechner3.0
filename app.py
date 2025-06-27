@@ -156,24 +156,20 @@ all_modules = {
 TOTAL_MODULES = len(all_modules)
 
 
-def load_calculations():
-    """Load calculation history from JSON file."""
-    if not os.path.exists(DATA_FILE):
-        return []
-    try:
-        with open(DATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return []
+
 
 
 def save_calculation(entry):
-    """Append a calculation entry to the JSON file."""
-    data = load_calculations()
-    data.append(entry)
-    os.makedirs(os.path.dirname(DATA_FILE), exist_ok=True)
-    with open(DATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+    """Saves a calculation entry to the database."""
+    new_calculation = Calculation(
+        user_id=entry["user_id"],
+        berater_name=entry["berater_name"],
+        klient_name=entry["klient_name"],
+        pflegegrad=entry["pflegegrad"],
+        results=entry["results"],
+    )
+    db.session.add(new_calculation)
+    db.session.commit()
 
 
 weighted_score_mapping_tables = {
@@ -460,6 +456,22 @@ class User(db.Model, UserMixin):
         return False
 
 
+class Calculation(db.Model):
+    __tablename__ = "calculations"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False)
+    date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    berater_name = db.Column(db.String(120), nullable=True)
+    klient_name = db.Column(db.String(120), nullable=True)
+    pflegegrad = db.Column(db.Integer, nullable=False)
+    results = db.Column(db.JSON, nullable=False)
+    user = db.relationship("User", backref=db.backref("calculations", lazy=True))
+
+    def __repr__(self):
+        return f"<Calculation {self.id}>"
+
+
+
 def admin_required(func):
     """Decorator ensuring the current user has admin role."""
     from functools import wraps
@@ -667,24 +679,39 @@ def rechner():
     return render_template("intro.html")
 
 
+
+
+
 @app.route("/dashboard")
 @login_required
 def dashboard():
     search_query = request.args.get("q", "").strip().lower()
-    user_calculations = []
-    all_calculations = load_calculations()
-    if current_user.is_authenticated:
-        for idx, calc in enumerate(all_calculations):
-            if calc.get("user_id") == current_user.id:
-                if not search_query or search_query in str(calc.get("klient_name", "")).lower():
-                    calc_entry = dict(calc)
-                    calc_entry["index"] = idx  # index used in link
-                    user_calculations.append(calc_entry)
+    if search_query:
+        user_calculations = Calculation.query.filter(
+            Calculation.user_id == current_user.id,
+            Calculation.klient_name.ilike(f"%{search_query}%")
+        ).all()
+    else:
+        user_calculations = Calculation.query.filter_by(user_id=current_user.id).all()
     return render_template(
         "dashboard.html",
         calculations=user_calculations,
         search_query=search_query,
     )
+
+@app.route("/account/delete", methods=["POST"])
+@login_required
+def delete_account():
+    """Deletes a user's account and all their data."""
+    user = User.query.get_or_404(current_user.id)
+    # Delete all calculations associated with the user
+    Calculation.query.filter_by(user_id=user.id).delete()
+    db.session.delete(user)
+    db.session.commit()
+    logout_user()
+    flash("Ihr Konto wurde endgültig gelöscht.", "success")
+    return redirect(url_for("index"))
+
 
 @app.route("/admin/user/delete/<int:user_id>", methods=["POST"])
 @login_required
@@ -747,20 +774,28 @@ def admin_change_role(user_id, new_role):
     return redirect(url_for("admin_dashboard"))
 
 
-@app.route("/admin/calculation/delete/<int:calc_index>", methods=["POST"])
+@app.route("/admin/calculation/delete/<int:calc_id>", methods=["POST"])
 @login_required
 @admin_required
-def admin_delete_calculation(calc_index):
-    calculations = load_calculations()
-    if 0 <= calc_index < len(calculations):
-        deleted_calc = calculations.pop(calc_index)
-        # Save the modified list back to the file
-        with open(DATA_FILE, "w", encoding="utf-8") as f:
-            json.dump(calculations, f, ensure_ascii=False, indent=2)
-        flash(f"Berechnung vom {deleted_calc.get('date')} für {deleted_calc.get('klient_name')} gelöscht.", "success")
-    else:
-        flash("Berechnung nicht gefunden.", "danger")
+def admin_delete_calculation(calc_id):
+    calc = Calculation.query.get_or_404(calc_id)
+    db.session.delete(calc)
+    db.session.commit()
+    flash(f"Berechnung gelöscht.", "success")
     return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/calculation/delete/<int:calc_id>", methods=["POST"])
+@login_required
+def delete_calculation(calc_id):
+    calc = Calculation.query.get_or_404(calc_id)
+    if calc.user_id != current_user.id:
+        flash("Zugriff verweigert.", "danger")
+        return redirect(url_for("dashboard"))
+    db.session.delete(calc)
+    db.session.commit()
+    flash("Berechnung gelöscht.", "success")
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/admin")
@@ -768,7 +803,7 @@ def admin_delete_calculation(calc_index):
 @admin_required
 def admin_dashboard():
     all_users = User.query.all()
-    calculations = load_calculations()
+    calculations = Calculation.query.all()
     return render_template(
         "admin_dashboard.html", users=all_users, calculations=calculations
     )
@@ -1376,21 +1411,16 @@ def result_page():
         all_modules=all_modules,
     )
 
-@app.route("/calculation/<int:index>")
+@app.route("/calculation/<int:calc_id>")
 @login_required
-def view_saved_calculation(index):
+def view_saved_calculation(calc_id):
     """Display a previously saved calculation."""
-    calculations = load_calculations()
-    if index < 0 or index >= len(calculations):
-        flash("Berechnung nicht gefunden.", "warning")
-        return redirect(url_for("dashboard"))
-
-    calc = calculations[index]
-    if calc.get("user_id") != current_user.id and current_user.role != "admin":
+    calc = Calculation.query.get_or_404(calc_id)
+    if calc.user_id != current_user.id and current_user.role != "admin":
         flash("Zugriff verweigert.", "danger")
         return redirect(url_for("dashboard"))
 
-    results = calc.get("results")
+    results = calc.results
     user_info = None
     if isinstance(results, dict):
         user_info = results.get("user_info")

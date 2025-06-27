@@ -88,8 +88,18 @@ h1, h2, h4, h5, .text-body-emphasis, .text-body-secondary {
     color: var(--text-color, #f8f9fa) !important;
 }
 
+.dark-mode .card {
+    background-color: var(--card-bg);
+    border-color: var(--card-border);
+    color: var(--text-color, #f8f9fa) !important;
+}
 
 .dark-mode .form-label {
+    background-color: rgb(0, 0, 0);
+    color: var(--text-color, #f8f9fa) !important;
+}
+
+.dark-mode .form-check-label {
     background-color: rgb(0, 0, 0);
     color: var(--text-color, #f8f9fa) !important;
 }
