@@ -825,6 +825,50 @@ If you did not make this request then simply ignore this email and no changes wi
     mail.send(msg)
 
 
+class ResendConfirmationForm(FlaskForm):
+    email = StringField("Email", validators=[DataRequired(), Email()])
+    submit = SubmitField("Resend Confirmation Email")
+
+
+def resend_confirmation():
+    form = ResendConfirmationForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(email=form.email.data).first()
+        if user:
+            if user.is_confirmed:
+                flash('Ihre E-Mail-Adresse ist bereits bestätigt. Bitte melden Sie sich an.', 'success')
+                return redirect(url_for('login'))
+            try:
+                token = user.get_reset_token()
+                msg = Message(
+                    "Bestätigen Sie Ihre E-Mail-Adresse",
+                    sender=app.config["MAIL_DEFAULT_SENDER"],
+                    recipients=[user.email],
+                )
+                msg.body = f"""Hallo {user.username},
+
+Vielen Dank für Ihre Registrierung. Bitte klicken Sie auf den folgenden Link, um Ihre E-Mail-Adresse zu bestätigen:
+
+{url_for('confirm_email', token=token, _external=True)}
+
+Wenn Sie diese E-Mail nicht angefordert haben, können Sie sie ignorieren.
+
+Mit freundlichen Grüßen,
+Ihr Team
+"""
+                mail.send(msg)
+                flash("Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang (und Spam-Ordner).", "info")
+            except Exception as e:
+                current_app.logger.error(f"Error resending confirmation email: {e}")
+                flash("Es gab ein Problem beim erneuten Senden der Bestätigungs-E-Mail. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.", "danger")
+        else:
+            flash("Es konnte kein Konto mit dieser E-Mail-Adresse gefunden werden.", "danger")
+        return redirect(url_for('login'))
+    return render_template('resend_confirmation.html', title='Resend Confirmation', form=form)
+
+app.add_url_rule('/resend_confirmation', 'resend_confirmation', resend_confirmation, methods=['GET', 'POST'])
+
+
 @app.route("/edit_profile", methods=["GET", "POST"])
 @login_required
 def edit_profile():
