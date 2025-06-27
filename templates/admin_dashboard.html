@@ -15,6 +15,8 @@
                     <th>Email</th>
                     <th>Name</th>
                     <th>Rolle</th>
+                    <th>Bestätigt</th>
+                    <th>Aktionen</th>
                 </tr>
             </thead>
             <tbody>
@@ -25,6 +27,29 @@
                         <td>{{ user.email }}</td>
                         <td>{{ user.vorname }} {{ user.name }}</td>
                         <td>{{ user.role }}</td>
+                        <td>{{ user.is_confirmed }}</td>
+                        <td>
+                            <div class="btn-group" role="group" aria-label="User Actions">
+                                <form action="{{ url_for('admin_delete_user', user_id=user.id) }}" method="post" onsubmit="return confirm('Sind Sie sicher, dass Sie diesen Benutzer löschen möchten?');" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
+                                </form>
+                                <form action="{{ url_for('admin_toggle_confirmation', user_id=user.id) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-info btn-sm">{% if user.is_confirmed %}Bestätigung aufheben{% else %}Bestätigen{% endif %}</button>
+                                </form>
+                                <form action="{{ url_for('admin_send_password_reset', user_id=user.id) }}" method="post" style="display:inline;">
+                                    <button type="submit" class="btn btn-warning btn-sm">Passwort zurücksetzen</button>
+                                </form>
+                                <div class="dropdown" style="display:inline;">
+                                    <button class="btn btn-secondary btn-sm dropdown-toggle" type="button" id="dropdownRole{{ user.id }}" data-bs-toggle="dropdown" aria-expanded="false">
+                                        Rolle ändern
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownRole{{ user.id }}">
+                                        <li><a class="dropdown-item" href="{{ url_for('admin_change_role', user_id=user.id, new_role='user') }}">Benutzer</a></li>
+                                        <li><a class="dropdown-item" href="{{ url_for('admin_change_role', user_id=user.id, new_role='admin') }}">Admin</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -56,6 +81,9 @@
                                 <form action="{{ url_for('generate_pdf') }}" method="post" style="display:inline;">
                                     <input type="hidden" name="calculation_id" value="{{ loop.index0 }}">
                                     <button type="submit" class="btn btn-secondary btn-sm">PDF</button>
+                                </form>
+                                <form action="{{ url_for('admin_delete_calculation', calc_index=loop.index0) }}" method="post" onsubmit="return confirm('Sind Sie sicher, dass Sie diese Berechnung löschen möchten?');" style="display:inline;">
+                                    <button type="submit" class="btn btn-danger btn-sm">Löschen</button>
                                 </form>
                             </td>
                         </tr>

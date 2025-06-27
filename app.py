@@ -686,6 +686,83 @@ def dashboard():
         search_query=search_query,
     )
 
+@app.route("/admin/user/delete/<int:user_id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_delete_user(user_id):
+    user = User.query.get_or_404(user_id)
+    if user.id == current_user.id:
+        flash("Sie können Ihr eigenes Konto nicht löschen.", "danger")
+        return redirect(url_for("admin_dashboard"))
+    db.session.delete(user)
+    db.session.commit()
+    flash(f"Benutzer {user.username} wurde gelöscht.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/user/toggle_confirmation/<int:user_id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_toggle_confirmation(user_id):
+    user = User.query.get_or_404(user_id)
+    user.is_confirmed = not user.is_confirmed
+    if user.is_confirmed:
+        user.confirmed_on = datetime.now()
+        flash(f"Benutzer {user.username} wurde bestätigt.", "success")
+    else:
+        user.confirmed_on = None
+        flash(f"Bestätigung für Benutzer {user.username} wurde aufgehoben.", "info")
+    db.session.commit()
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/user/send_password_reset/<int:user_id>", methods=["POST"])
+@login_required
+@admin_required
+def admin_send_password_reset(user_id):
+    user = User.query.get_or_404(user_id)
+    try:
+        send_reset_email(user)
+        flash(f"Passwort-Reset-E-Mail an {user.email} gesendet.", "success")
+    except Exception as e:
+        current_app.logger.error(f"Error sending password reset email from admin: {e}")
+        flash(f"Fehler beim Senden der Passwort-Reset-E-Mail an {user.email}.", "danger")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/user/change_role/<int:user_id>/<string:new_role>")
+@login_required
+@admin_required
+def admin_change_role(user_id, new_role):
+    user = User.query.get_or_404(user_id)
+    if new_role not in ["user", "admin"]:
+        flash("Ungültige Rolle.", "danger")
+        return redirect(url_for("admin_dashboard"))
+    if user.id == current_user.id and new_role != "admin":
+        flash("Sie können Ihre eigene Admin-Rolle nicht aufheben.", "danger")
+        return redirect(url_for("admin_dashboard"))
+    user.role = new_role
+    db.session.commit()
+    flash(f"Rolle von {user.username} zu {new_role} geändert.", "success")
+    return redirect(url_for("admin_dashboard"))
+
+
+@app.route("/admin/calculation/delete/<int:calc_index>", methods=["POST"])
+@login_required
+@admin_required
+def admin_delete_calculation(calc_index):
+    calculations = load_calculations()
+    if 0 <= calc_index < len(calculations):
+        deleted_calc = calculations.pop(calc_index)
+        # Save the modified list back to the file
+        with open(DATA_FILE, "w", encoding="utf-8") as f:
+            json.dump(calculations, f, ensure_ascii=False, indent=2)
+        flash(f"Berechnung vom {deleted_calc.get('date')} für {deleted_calc.get('klient_name')} gelöscht.", "success")
+    else:
+        flash("Berechnung nicht gefunden.", "danger")
+    return redirect(url_for("admin_dashboard"))
+
+
 @app.route("/admin")
 @login_required
 @admin_required
