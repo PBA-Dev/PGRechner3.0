@@ -57,9 +57,8 @@ app.config['SESSION_TYPE'] = 'filesystem'
 
 # Configure Flask-Mail from environment variables
 app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 465))
-app.config['MAIL_USE_TLS'] = False
-app.config['MAIL_USE_SSL'] = True
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'true').lower() in ['true', '1', 't']
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
@@ -401,6 +400,15 @@ from wtforms.validators import DataRequired, Email, EqualTo, Length, Optional
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
 
+app.config.update(
+    MAIL_SERVER='smtp.gmail.com',
+    MAIL_PORT=587,
+    MAIL_USE_TLS=True,
+    MAIL_USERNAME=os.getenv('MAIL_USERNAME'),
+    MAIL_PASSWORD=os.getenv('MAIL_PASSWORD'),
+    MAIL_DEFAULT_SENDER=os.getenv('MAIL_DEFAULT_SENDER'),
+)
+
 from itsdangerous import URLSafeTimedSerializer as Serializer
 
 class User(db.Model, UserMixin):
@@ -732,55 +740,12 @@ def send_reset_email(user):
         sender=app.config["MAIL_DEFAULT_SENDER"],
         recipients=[user.email],
     )
-    msg.body = f"""To reset your password, visit the following link:
+    msg.body = f"""Um Ihr Passwort zurückzusetzen, besuchen Sie den folgenden Link:
 {url_for('reset_token', token=token, _external=True)}
 
 If you did not make this request then simply ignore this email and no changes will be made.
 """
     mail.send(msg)
-
-
-class ResendConfirmationForm(FlaskForm):
-    email = StringField("Email", validators=[DataRequired(), Email()])
-    submit = SubmitField("Resend Confirmation Email")
-
-
-@app.route("/resend_confirmation", methods=["GET", "POST"])
-def resend_confirmation():
-    form = ResendConfirmationForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user:
-            if user.is_confirmed:
-                flash('Ihre E-Mail-Adresse ist bereits bestätigt. Bitte melden Sie sich an.', 'success')
-                return redirect(url_for('login'))
-            try:
-                token = user.get_reset_token()
-                msg = Message(
-                    "Bestätigen Sie Ihre E-Mail-Adresse",
-                    sender=app.config["MAIL_DEFAULT_SENDER"],
-                    recipients=[user.email],
-                )
-                msg.body = f"""Hallo {user.username},
-
-Sie haben eine erneute Bestätigung Ihrer E-Mail-Adresse angefordert. Bitte klicken Sie auf den folgenden Link, um Ihre E-Mail-Adresse zu bestätigen:
-
-{url_for('confirm_email', token=token, _external=True)}
-
-Wenn Sie diese E-Mail nicht angefordert haben, können Sie sie ignorieren.
-
-Mit freundlichen Grüßen,
-Ihr Team
-"""
-                mail.send(msg)
-                flash("Ein neuer Bestätigungslink wurde an Ihre E-Mail-Adresse gesendet. Bitte überprüfen Sie Ihren Posteingang (und Spam-Ordner).", "info")
-            except Exception as e:
-                current_app.logger.error(f"Error resending confirmation email: {e}")
-                flash("Es gab ein Problem beim erneuten Senden der Bestätigungs-E-Mail. Bitte versuchen Sie es später erneut oder kontaktieren Sie den Support.", "danger")
-        else:
-            flash("Es konnte kein Konto mit dieser E-Mail-Adresse gefunden werden.", "danger")
-        return redirect(url_for('login'))
-    return render_template('resend_confirmation.html', title='Resend Confirmation', form=form)
 
 
 @app.route("/edit_profile", methods=["GET", "POST"])
